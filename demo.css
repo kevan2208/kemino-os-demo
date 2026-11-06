@@ -1,0 +1,1 @@
+#demo-badge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);right:8px;z-index:99;background:#ffb21f;color:#100d17;font:600 10px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em;padding:5px 8px;border-radius:99px;pointer-events:none;opacity:.95}
