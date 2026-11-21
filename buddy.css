@@ -1,0 +1,9 @@
+/* buddy.css: the same rules buddy.js injects. Use this file (or paste it into the app's
+   stylesheet) when the app's CSP has style-src 'self', and pass { injectStyle: false }. */
+.pixel-buddy { position: relative; display: inline-flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+.pixel-buddy img { image-rendering: pixelated; image-rendering: crisp-edges; display: block; width: auto; transform-origin: 50% 100%; }
+.pixel-buddy.idle img { animation: buddy-breathe 1.2s steps(2, end) 3; }
+.pixel-buddy.hop img { animation: buddy-hop .9s steps(1, end) var(--buddy-hops, 1); }
+@keyframes buddy-breathe { 0% { transform: translateY(0); } 50% { transform: translateY(-2px); } 100% { transform: translateY(0); } }
+@keyframes buddy-hop { 0% { transform: scale(1.14, .82); } 25% { transform: translateY(calc(-1 * var(--buddy-hop, 8px))) scale(.9, 1.12); } 55% { transform: translateY(calc(-1 * var(--buddy-hop, 8px))) scale(1, 1); } 75% { transform: translateY(0) scale(1.12, .86); } 100% { transform: translateY(0) scale(1, 1); } }
+@media (prefers-reduced-motion: reduce) { .pixel-buddy img { animation: none !important; } }

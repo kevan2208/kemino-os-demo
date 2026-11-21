@@ -1,0 +1,108 @@
+/* Kemino OS theme: "Crisp + Orbit" (R4b): graphite, hairlines, faint violet depth; cyan is ONLY for needs-you (card, Yes, dot). Running/spinners are lilac.
+   (was "Orbit".) Every colour, font, radius, shadow and blur lives here; style.css and login.css only use these variables.
+   Dark only for now (deep violet, glass panels, cyan glow). A light theme later = one more block in this file. */
+:root{
+  color-scheme:dark;
+
+  /* fonts */
+  --ui:'Onest',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+
+  /* surfaces */
+  --bg:#0b0a15;
+  --s1:rgba(26,22,48,.55);          /* glass panel */
+  --s1-solid:#1a1630;               /* same, opaque (menus, pills on busy backgrounds) */
+  --s2:rgba(36,30,66,.6);         /* code blocks, inset boxes */
+  --glass-edge:rgba(255,255,255,.05);
+  --blur:blur(14px);
+
+  /* text */
+  --ink:#ebeaf5;
+  --mut:#a29fbf;
+  --dim:#8f8bb0;
+
+  /* lines */
+  --line:rgba(140,122,255,.15);
+  --path:#5d5686;
+
+  /* status colours (colour = status, nothing else) */
+  --run:#9a8cff;
+  --fail:#f2646a;
+  --on-fail:#2a0612;
+  --stall:#e2b75e;
+  --done:#8a86a8;
+
+  /* map dots: working green, needs-you amber, failed red, done grey */
+  --map-work:#47d983;
+  --map-ask:#f5b942;
+  --map-fail:#ff6b6b;
+  --map-done:#8a86a8;
+
+  /* accent: cyan glow = needs you, Yes buttons, focus */
+  --saf:#4ee6d6;
+  --saf-text:#4ee6d6;
+  --on:#05221f;
+  --cb:rgba(94,234,212,.55);       /* border of a card that needs you */
+  --glow:0 0 28px -10px rgba(78,230,214,.28);
+  --btn-yes:#4ee6d6;
+  --btn-yes-glow:none;
+  --btn-bg:rgba(255,255,255,.04);
+  --btn-edge:rgba(140,122,255,.3);
+
+  /* you (your own chat bubbles) */
+  --you:#6c47e6;
+  --pill:rgba(235,234,245,.075);   /* neutral dark pill: user message, chips, icon buttons in the chat */
+  --hair:rgba(235,234,245,.09);
+  --hair-hi:rgba(235,234,245,.28);
+  --composer-bg:rgba(24,22,40,.93);
+  --composer-sh:0 6px 22px rgba(0,0,0,.35);
+  --you-bg:rgba(235,234,245,.085); /* neutral dark pill: no violet, no gradient (chat redesign) */
+  --you-on:var(--ink);
+
+  /* active segment (pill switches) */
+  --seg-bg:#ebeaf5;
+  --seg-on:#0b0a15;
+  --seg-track:rgba(36,30,66,.6);
+  --wt-wash:rgba(154,140,255,.12);  /* faint violet behind "Writing to:" on a non-head thread */
+
+  /* elevation */
+  --sh:0 12px 30px -12px rgba(0,0,0,.7);
+  --sh-card:0 0 28px -10px rgba(78,230,214,.28);
+  --scrim:rgba(8,6,18,.85);
+  --scrim-soft:rgba(8,6,18,.55);   /* behind the office mini sheet: the office stays visible */
+  --title-grad:linear-gradient(#ebeaf5,#ebeaf5);
+  --code-bg:rgba(8,6,20,.6);
+  --sel-bg:rgba(140,122,255,.12);
+  --mask-on:#000;
+  --card-need:linear-gradient(160deg,rgba(60,52,110,.55),rgba(24,20,48,.7));
+  --capsule-bg:rgba(26,22,48,.78);
+  --capsule-edge:rgba(160,142,255,.28);
+  --capsule-glow:0 0 0 1px rgba(0,0,0,.3),0 12px 30px -10px rgba(120,100,255,.28);
+  --top-bg:rgba(11,10,21,.7);
+  --toast-bg:#ebeaf5;
+  --toast-on:#1a1030;
+
+  /* the page: deep violet with soft glows */
+  --art:radial-gradient(420px 260px at 85% -40px,rgba(120,100,255,.16),transparent 70%),radial-gradient(700px 360px at 10% 110%,rgba(120,100,255,.07),transparent 70%),#0b0a15;
+
+  /* shape */
+  --r:12px;           /* cards */
+  --r-sm:12px;        /* buttons, code */
+  --r-pill:999px;
+  --gut:16px;
+  --tap:44px;
+  --h1-ls:-.025em;
+  --halo:rgba(78,230,214,.16);     /* soft ring round the needs-you dot */
+  --code-ink:#bfeaf2;              /* command text inside a needs-you card */
+  --sh-capsule:none;
+
+  /* type sizes */
+  --h1:36px;
+  --h1-weight:700;
+
+  /* pixel office rooms (room borders cycle through these) */
+  --room-a:#5fe3cf;--room-b:#8f7bff;--room-c:#e07ad8;--room-d:#ffb86b;--room-e:#6fa8ff;
+  --room-bg:rgba(20,14,48,.55);
+  --skin:#f1c9a0;--eye:#2a2030;--desk:#9a6a45;--desk-edge:#5f3d28;--mon:#2d3548;
+}
+@media (min-width:900px){:root{--gut:20px;--tap:36px;--h1:30px}}

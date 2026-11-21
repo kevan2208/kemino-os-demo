@@ -1,0 +1,25 @@
+/* Providers sheet (providers.js): calm cards, no teal (that colour means "needs you"), state = shape + word. */
+.pv-sheet{width:min(560px,100%);max-height:92vh}
+.pv-lead{margin:0 0 10px;color:var(--mut);font-size:15px}
+.pv-body{display:grid;gap:12px}
+.pv-card{border:1px solid var(--line);border-radius:14px;background:var(--s2);padding:12px 14px;display:grid;gap:6px;font-size:15px}
+.pv-off{opacity:.75}
+.pv-top{display:flex;align-items:center;gap:12px}
+.pv-face{width:40px;height:40px;flex:none;image-rendering:pixelated;object-fit:contain}
+.pv-face.blank{display:inline-block;border-radius:8px;background:var(--line)}
+.pv-name{display:flex;flex-direction:column;min-width:0}
+.pv-name b{font:650 16px var(--ui)}
+.pv-acct{color:var(--mut);font-size:14px;overflow-wrap:anywhere}
+.pv-status{margin:0;font-weight:600;overflow-wrap:anywhere}
+.pv-status[data-kind=error]{color:var(--fail)}
+.pv-glyph{display:inline-block;width:1.2em;text-align:center}
+.pv-use{margin:0;display:flex;flex-wrap:wrap;gap:2px 14px;color:var(--mut);font-size:14px}
+.pv-u.mid{color:var(--ink)}.pv-u.low{color:var(--fail)}
+.pv-says{margin:0;color:var(--dim);font-size:14px}
+.pv-models summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600;color:var(--ink)}
+.pv-models ul{margin:0 0 4px;padding-left:18px;display:grid;gap:4px;color:var(--mut);font-size:14px}
+.pv-none,.pv-folded{margin:0;color:var(--dim);font-size:14px}
+.pv-note{margin:2px 0 0;color:var(--dim);font-size:14px}
+.pv-stale{margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;color:var(--ink);font-size:15px}
+.pv-models summary::after{content:"▾";margin-left:8px;color:var(--dim)}
+.pv-models[open] summary::after{content:"▴"}

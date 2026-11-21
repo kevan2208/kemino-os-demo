@@ -1,0 +1,14 @@
+/* Slash list above the message box + the Goal card. Calm: the app's own variables, no shadow stack, no motion. */
+.composer-wrap{position:relative}
+.slash{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:5;border:1px solid var(--line);background:var(--s1-solid);border-radius:14px;padding:4px;max-height:60vh;overflow-y:auto}
+.slash[hidden]{display:none}
+.slash-list{list-style:none;margin:0;padding:0}
+.slash-row{display:flex;align-items:baseline;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;min-height:40px;box-sizing:border-box}
+.slash-row[aria-selected="true"]{background:var(--s2)}
+.slash-name{font-family:var(--mono);font-size:14px;color:var(--ink);flex:none}
+.slash-desc{font-size:13px;color:var(--mut);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.goalcard{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--s1);border-radius:12px;padding:6px 8px 6px 12px;font-size:13px;color:var(--mut);margin-bottom:6px}
+.goalcard .gtext{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.goalcard .gtext b{color:var(--ink);font-weight:600}
+.goalcard button{flex:none;border:1px solid var(--line);background:none;color:var(--mut);border-radius:10px;min-height:32px;padding:0 12px;font:inherit;cursor:pointer}
+.goalcard button:hover{color:var(--ink)}

@@ -1,0 +1,34 @@
+/* "Running hot" nudge, variant B: a small soft warm card. Never red, never teal. Phone and tablet (< 900px) and the desktop strip share it. */
+.hot-card{--warm:#f1cfa8;margin:10px 0;padding:12px 14px 6px;border:1px solid rgba(255,205,160,.17);border-radius:18px;background:rgba(255,205,160,.075);color:var(--mut);font:14px/1.45 var(--ui);max-height:260px;overflow:hidden;transition:opacity .5s,max-height .5s,margin .5s,padding .5s,border-width .5s}
+.hot-card.in{animation:hot-fi .6s ease both}
+@keyframes hot-fi{from{opacity:0;transform:translateY(-3px)}}
+.hot-card.gone{opacity:0;max-height:0;margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;border-width:0}
+.hot-hd{display:flex;gap:10px;align-items:center}
+.hot-hd b{font-size:15px;color:var(--ink);font-weight:600}
+.hot-face{image-rendering:pixelated;width:32px;height:32px;flex:none}
+.hot-card p{margin:6px 0 8px}
+.hot-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hot-chip{font-size:12.5px;color:var(--warm);background:rgba(255,205,160,.1);border-radius:999px;padding:3px 10px}
+.hot-got{background:none;border:0;color:var(--warm);font:600 13.5px var(--ui);cursor:pointer;padding:8px 4px;min-height:44px;opacity:.9}
+.hot-got:hover{opacity:1;text-decoration:underline}
+.hot-got:focus-visible{outline:2px solid var(--run);outline-offset:2px;border-radius:6px}
+@media (min-width:900px){.hot-card{margin:8px 0 10px}}
+@media (prefers-reduced-motion:reduce){.hot-card,.hot-card.in{animation:none;transition:none}}
+
+.offer-slot{flex:none;padding:0 var(--gut)}
+.offer-slot:empty{display:none}
+/* Today view on the phone: in flow under the list, clear of the fixed tab bar */
+.offer-slot-today{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+@media (min-width:900px){.offer-slot-today{display:none}}
+#app[data-view=chat] .offer-slot-today{display:none}
+/* Same dark bar look as the question/permission/secret bars (.qbar): saffron edge, --card-need fill, --ink text; works in both themes. In flow, full width, 44 pt buttons. */
+.offer{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;width:100%;max-width:720px;box-sizing:border-box;margin:6px auto 8px;padding:8px 8px 8px 14px;border:1px solid var(--saf);border-radius:var(--r-sm);background:var(--card-need);color:var(--ink);font-weight:600;font-size:14px;animation:offer-in .24s cubic-bezier(.2,.8,.2,1) both}
+@keyframes offer-in{from{opacity:0;transform:translateY(6px)}}
+.offer .b{min-height:44px}
+.offer .b.offer-yes{padding:0 18px}
+.offer .b.offer-no{color:var(--mut);background:none;border-color:transparent}
+.offer .b:focus-visible{outline:2px solid var(--run);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.offer{animation:none}}
+.offer-say{flex:1 1 200px;overflow-wrap:anywhere}
+.tidyline{margin:8px 2px;color:var(--mut);font-size:13px}
+.tidyline-undo{background:none;border:0;padding:6px 4px;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;min-height:32px}

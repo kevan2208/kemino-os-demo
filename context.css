@@ -1,0 +1,14 @@
+/* Context health badges. Soft amber (warn) and soft red-orange (hot); never teal (teal = needs you). Always text too, never colour alone. */
+:root{--ctx-warn:var(--stall,#e2b75e);--ctx-hot:#f08a63;--ctx-ok:var(--dim,#8f8bb0)}
+.ctx{display:inline-flex;align-items:center;gap:5px;font:600 13px/1.3 var(--ui);white-space:nowrap;color:var(--ctx-ok);padding:1px 8px;border-radius:999px;border:1px solid transparent}
+.ctx::before{content:"";width:7px;height:7px;flex:none;background:currentColor;border-radius:50%}
+.ctx-ok::before{display:none}
+.ctx-ok{padding:0;font-weight:500}
+.ctx-warn{color:var(--ctx-warn);background:rgba(226,183,94,.12);border-color:rgba(226,183,94,.3)}
+.ctx-hot{color:var(--ctx-hot);background:rgba(240,138,99,.14);border-color:rgba(240,138,99,.34)}
+.ctx-hot::before{border-radius:2px;transform:rotate(45deg)} /* a diamond, not a dot: a second cue besides colour */
+.ctx-head{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:6px 0 0}
+.ctx-why{font:500 13px/1.35 var(--ui);color:var(--mut,#a29fbf)}
+.row .mid .ctx,.kid .mid .ctx{margin-top:3px;align-self:flex-start}
+.oa-state .ctx{margin-left:8px}
+@media (prefers-reduced-motion:no-preference){.ctx{transition:background-color .2s,color .2s}}

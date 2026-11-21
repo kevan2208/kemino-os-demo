@@ -1,0 +1,77 @@
+/* The buddy row (replaces the usage chips): five faces, each with its name and "% left" (or "back 18:29" when asleep).
+   Layout is fixed by grid so a long caption never changes the row's height; a tap target is the whole 44 px+ button. It sits in normal flow and scrolls with the page, so it can never cover a sheet, toast or the capsule. */
+.buddy-row{margin:6px 0 0;min-height:0}
+.buddy-row:empty{display:none}
+.buddy-row .buddies{width:100%}
+.buddies{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0 2px;align-items:start}
+.bd{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;min-height:44px;padding:2px 0 4px;border:0;background:none;color:var(--ink);font:500 13px/1.25 var(--ui);cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:12px;container-type:inline-size}
+.bd:active{background:var(--s2)}
+.bd:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.bd-face{display:flex;align-items:flex-end;justify-content:center;height:56px;width:100%}
+.bd-cap{min-width:0;display:flex;flex-direction:column;align-items:center;max-width:100%;text-align:center}
+.bd-nm{font-weight:500;color:var(--ink);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.bd-lf{font:400 12px/1.25 var(--ui);font-variant-numeric:tabular-nums;color:var(--mut);white-space:normal;overflow-wrap:anywhere;min-width:0;max-width:100%;text-align:center}
+.bd-lf{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:ellipsis}
+/* two windows shown: one line each, so a caption is never more than 2 lines in total */
+.bd-lf:has(+ .bd-lf:not([hidden])),.bd-lf + .bd-lf:not([hidden]){-webkit-line-clamp:1;line-clamp:1}
+.bd-lf[hidden]{display:none}
+.bd-lf[data-tone=mid]{color:var(--stall)}
+.bd-lf[data-tone=low]{color:var(--fail)}
+.bd[data-state=needsyou] .bd-lf,.bd-lf[data-say]{color:var(--saf-text)}
+.bd[data-state=asleep] .bd-face{opacity:.8}
+.bd-n{position:absolute;top:0;right:calc(50% - 34px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;border:1px solid var(--line);background:var(--s2);color:var(--ink);font:600 13px/16px var(--mono);text-align:center}
+.bd-n[hidden]{display:none}
+.bd-live{position:absolute}
+.buddy-top{display:none}
+
+/* the tap sheet */
+.bd-sheet-head{display:flex;align-items:center;gap:12px;min-width:0}
+.bd-sheet-face{width:48px;height:48px;image-rendering:pixelated;image-rendering:crisp-edges;flex:none}
+.bd-sheet-title{font:600 17px/1.25 var(--ui);overflow-wrap:anywhere}
+.bd-sheet-body .bd-sec{margin:14px 0 4px;font:600 12px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.bd-sheet-body .bd-back{margin:2px 0 0;font:600 16px var(--ui);color:var(--ink)}
+.bd-wins,.bd-jobs{list-style:none;margin:4px 0 0;padding:0}
+.bd-wins li{padding:6px 0;font-size:15px;color:var(--mut)}
+.bd-wins li b{color:var(--ink);font-weight:500}
+.bd-sheet-body .bd-none{margin:4px 0 0;font-size:15px;color:var(--mut)}
+.bd-job{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:8px 2px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:500 15px/1.35 var(--ui);text-align:left;cursor:pointer}
+.bd-job small{flex:none;color:var(--saf-text);font-size:13px}
+.bd-jt{min-width:0;overflow-wrap:anywhere}
+.bd-sheet-body .bd-heard{margin:14px 0 0;font:500 13px/1.4 var(--ui);color:var(--dim)}
+.bd-sheet-body .bd-heard.red{color:var(--fail)}
+
+/* Mac: the same five faces, compact, in the top bar. The row under the title is hidden there. The name and "% left" are the tooltip. */
+@media (min-width:900px){
+  #list .buddy-row{display:none}
+  .buddy-top{display:block;margin:0}
+  .buddy-top .buddies{display:flex;gap:0}
+  /* the five faces take 240 px of the top bar: tighten the rest a little (the bar must stay one line at 1280) */
+  .top{gap:6px 6px}
+  .top .sg button{padding:0 9px}
+  .top .pill{padding:0 9px}
+  .top .focus .sel-wrap select{max-width:150px}
+  /* each cell ~64 px: a 36 px face, then the name (11 px, 600) and the one or two usage lines (10.5 px mono, same tone colours as the phone) */
+  /* the 48 px sprites stand 12 px above their 36 px cell, and their '!' marks sit in the top pixels: 10 px of room on top so nothing touches the window edge (rail.css gives the strip 12 px on top; the bar gives 4 px back below) */
+  .buddy-top .buddies{align-items:flex-start;gap:0}
+  .top{padding-bottom:6px}
+  .buddy-top .bd{width:64px;min-width:0;min-height:0;padding:0;gap:1px}
+  .buddy-top .bd-face{height:36px;width:auto}
+  .buddy-top .bd-nm{font:600 12px/1.2 var(--ui)}
+  .buddy-top .bd-lf{font:500 12px/1.2 var(--ui);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;white-space:normal;text-overflow:ellipsis}
+  /* a caption that does not fit one line ("back Sat 19:15") wraps to a 2nd line instead of being cut to "back Sa..."; a 1px gutter keeps neighbouring cells' text apart */
+  .buddy-top .bd{padding:0 1px;box-sizing:border-box}
+  .buddy-top .bd-cap{width:100%}
+  .buddy-top .bd-lf:has(+ .bd-lf:not([hidden])),.buddy-top .bd-lf + .bd-lf:not([hidden]){-webkit-line-clamp:2;line-clamp:2}
+  .buddy-top .bd-n{right:2px;top:0;min-width:16px;height:16px;font-size:11px;line-height:14px}
+}
+
+/* Who is working: the AI's static idle face on Working rows and helpers, and its name under an Office desk. */
+.ai-face{width:36px;height:36px;flex:none;align-self:center;display:block;object-fit:contain;image-rendering:crisp-edges;image-rendering:pixelated}
+.ai-face.sm{width:28px;height:28px}
+.wk-ai{font:500 9.5px var(--ui);fill:var(--mut);text-anchor:middle}
+.wk.needs-you .wk-ai{fill:var(--saf-text)}
+.ai-img{image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* A long name ("Antigravity") shows its short form only where the column is truly too narrow for it at full size (phone 13 px: 69 px wide; top bar 11 px bold: ~63 px). The size never shrinks; the full name stays in the title and the aria label. */
+@media (max-width:899px){@container (max-width:68px){.bd-nm[data-short]{font-size:0}.bd-nm[data-short]::after{content:attr(data-short);font-size:13px;font-weight:500}}}
+@media (min-width:900px){@container (max-width:66px){.buddy-top .bd-nm[data-short]{font-size:0}.buddy-top .bd-nm[data-short]::after{content:attr(data-short);font-size:12px;font-weight:600}}}

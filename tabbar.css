@@ -1,0 +1,43 @@
+/* Phone bottom tab bar + top search sheet (tabbar.js). Phone only: .capw is already display:none from 900px up and hidden inside an open chat. */
+.capw.tbw{left:0;right:0;bottom:0;max-width:none;margin:0}
+.tb{display:flex;background:var(--capsule-bg);border-top:1px solid var(--capsule-edge);padding:6px 4px max(8px,env(safe-area-inset-bottom));backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.tb-tab{flex:1;min-width:0;min-height:56px;border:0;background:none;display:grid;justify-items:center;align-content:center;gap:2px;color:var(--mut);font:600 13px var(--ui);position:relative;border-radius:14px;cursor:pointer}
+.tb-tab:active{transform:scale(.97)}
+.tb-ico{width:24px;height:24px}
+.tb-tab[aria-current=page]{color:var(--ink);background:rgba(154,140,255,.18)}
+.tb-tab[aria-current=page]:after{content:'';position:absolute;bottom:3px;left:32%;right:32%;height:3px;border-radius:2px;background:var(--run)}
+.tb-dot{position:absolute;top:1px;left:calc(50% + 6px);display:flex;align-items:center;gap:2px;height:22px;padding:0 6px 0 2px;border-radius:11px;background:var(--saf);color:var(--on);box-shadow:0 0 0 3px var(--halo)}
+.tb-dot b{font:700 12px var(--ui)}
+.tb-face{width:18px;height:18px;image-rendering:pixelated;transform-origin:50% 100%;animation:tbwave 1.4s ease-in-out infinite}
+@keyframes tbwave{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-8deg) translateY(-1px)}75%{transform:rotate(8deg) translateY(-1px)}}
+@media (prefers-reduced-motion:reduce){.tb-face{animation:none}}
+/* screens keep clear of the bar */
+@media (max-width:899px){
+  .list-in{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+  .view-in{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+  #toast{bottom:calc(max(8px,env(safe-area-inset-bottom)) + 76px)}
+  .srchbtn{min-width:44px;height:44px;border-radius:22px;padding:0;justify-content:center;margin:-7px 0}
+  .srchbtn .tb-ico{width:20px;height:20px}
+}
+.fchip-w{display:none}
+@media (max-width:899px){
+  .fchip-w{display:block;flex:none;padding:0 var(--gut)}
+  .fchip-w:empty{display:none}
+  #app[data-view=chat] .fchip-w{display:none}
+}
+.fchip{display:inline-flex;align-items:center;max-width:100%;border-radius:22px;background:var(--s1-solid);border:1px solid var(--cb);color:var(--ink);margin:2px 0 6px}
+.fchip button{border:0;background:none;color:inherit;font:600 13px var(--ui);min-height:44px;cursor:pointer}
+.fchip-t{padding:0 4px 0 14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fchip-x{width:44px;font-size:22px!important}
+/* the search sheet: slides down from the top */
+.srch-wrap{position:fixed;inset:0;z-index:60;background:var(--scrim-soft);display:block}
+.srch-card{background:var(--s1-solid);border-bottom:1px solid var(--capsule-edge);padding:max(12px,env(safe-area-inset-top)) 14px 14px;animation:srchin 160ms ease-out}
+@keyframes srchin{from{transform:translateY(-100%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.srch-card{animation:none}}
+.srch-row{display:flex;align-items:center;gap:6px}
+.srch-in{flex:1;min-width:0;height:48px;border-radius:24px;border:1px solid var(--capsule-edge);background:var(--s2);color:var(--ink);padding:0 18px;font:inherit;font-size:16px;outline:0}
+.srch-in:focus{border-color:var(--saf)}
+.srch-row .mic{height:44px}
+.srch-done{min-height:44px;padding:0 10px;border:0;background:none;color:var(--run);font:600 15px var(--ui);cursor:pointer}
+
+.tb-upd{position:absolute;top:7px;left:calc(50% + 6px);width:9px;height:9px;border-radius:50%;background:var(--saf);box-shadow:0 0 0 2px var(--capsule-bg-solid,var(--bg))}

@@ -1,0 +1,32 @@
+{
+  "name": "Termi (public Codex stand-in)",
+  "option": "B",
+  "source": "original, hand-drawn grid (script: the Kemino buddy draw script)",
+  "licence": "sales-ok",
+  "licence_line": "Original character drawn for Kemino OS; no third-party art used.",
+  "places_approved": [],
+  "size": 24,
+  "poses": [
+    "idle",
+    "working",
+    "needsyou",
+    "tired",
+    "asleep",
+    "done"
+  ],
+  "frames": {
+    "working": [
+      "working",
+      "working-b"
+    ],
+    "needsyou": [
+      "needsyou",
+      "needsyou-b"
+    ]
+  },
+  "moves": [
+    "idle",
+    "hop"
+  ],
+  "public_demo": true
+}

@@ -1,0 +1,159 @@
+/* DESKTOP SHELL ("B: persistent left strip", You 8 Nov). Everything that changes the look is inside @media (min-width:900px): the phone is untouched.
+   The few rules outside it only HIDE desktop-only elements on the phone. Colours come from theme.css; teal (--saf) stays for "needs you" only. */
+.insp,#view-scroll{display:none}
+
+@media (min-width:900px){
+  /* ---- shell: strip + right pane ---- */
+  #app[data-rail=open] .shell,#app[data-rail=open][data-mode=office] .shell,#app[data-rail=open][data-mode=map] .shell{grid-template-columns:336px minmax(0,1fr)}
+  #app[data-rail=collapsed] .shell,#app[data-rail=collapsed][data-mode=office] .shell,#app[data-rail=collapsed][data-mode=map] .shell{grid-template-columns:64px minmax(0,1fr)}
+  .pane-list{background:rgba(11,10,21,.4)}
+  #list.list-in{padding:12px 14px 40px;max-width:none;margin:0}
+  #app[data-view=today] .pane-chat>#chat-head,#app[data-view=today] .pane-chat>#chat-scroll,#app[data-view=today] .pane-chat>#dock{display:none}
+  #app[data-view=today] #view-scroll{display:block}
+  .pane-chat{position:relative;overflow:hidden;transition:padding-right .16s ease}
+  #app[data-view=chat] #view-scroll{display:none}
+  .view-in{padding:14px 28px 60px}
+  .home-col{max-width:720px;margin:0 auto}
+  .view-in>.at{max-width:960px;margin:0 auto}
+  .view-in .at-search{display:none} /* the top bar's search box does this job */
+  .view-in .title h1{font-size:30px}
+
+  /* ---- top bar: ONE line from 900 up ---- */
+  #top{flex-wrap:nowrap;gap:10px;min-height:56px;padding-block:8px}
+  #top>*{flex:none}
+  #top>.topsearch{flex:1 1 220px}
+  #top>.grow{flex:1 1 0;min-width:0}
+  .tabs{display:flex;gap:2px;padding:3px;border-radius:21px;background:var(--seg-track);border:1px solid var(--line)}
+  .tab{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:0;border-radius:17px;background:none;color:var(--mut);font:600 14px var(--ui);white-space:nowrap}
+  .tab[aria-selected=true]{background:var(--seg-bg);color:var(--seg-on)}
+  .tcount{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:rgba(154,140,255,.24);color:#dcd7ff;font:600 13px/20px var(--mono);font-variant-numeric:tabular-nums;text-align:center}
+  .tab[aria-selected=true] .tcount{background:#6c47e6;color:#fff}
+  #top .focus .sel-wrap select{max-width:150px;font-size:14px}
+  .topsearch{flex:1 1 220px;min-width:90px;max-width:300px;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:18px;background:var(--s1);color:var(--ink);font:400 14px var(--ui);outline:0}
+  .topsearch:focus{border-color:var(--run);box-shadow:0 0 0 2px rgba(154,140,255,.35)}
+  .newbtn,.morebtn{height:36px;padding:0 14px;border-radius:18px;font:600 14px var(--ui);white-space:nowrap}
+  .newbtn{border:0;background:var(--seg-bg);color:var(--seg-on)}
+  .morebtn{border:1px solid var(--btn-edge);background:var(--btn-bg);color:var(--ink)}
+  #top .pill{flex:0 1 auto;min-width:0;max-width:210px;overflow:hidden;text-overflow:ellipsis;font-size:13px;height:34px}
+  #top .pill.bell{padding:0 9px}
+  /* the buddy row (5 faces, names and usage under each) sits right after the brand, as before: 5 x 58 = 290 px */
+  #top .buddy-top .bd{width:70px;flex:none}
+  #top .buddy-top .buddies{gap:0;padding:12px 4px 4px}
+  #top>.topsearch{flex:4 1 90px;min-width:56px}
+  #top .focus .sel-wrap select{max-width:120px}
+  #top .pill.live,#top .pill.off{flex:none;max-width:none}
+  #top .pill.bell{flex:none}
+  @media (max-width:1599px){#top .focus{display:none}}
+  @media (max-width:1099px){#top{gap:8px}#top .pill{max-width:150px}.tab{padding:0 10px}.topsearch{min-width:70px}}
+  /* 900-1099: one line without wrapping. Here the search box shrinks to a stub (the / key still focuses it), the bell is hidden (it is in More), the words on "+ New thread" and on the Live pill (dot + tooltip) */
+  @media (max-width:1279px){.topsearch{min-width:48px}#top .brand{font-size:16px}#top{gap:6px}#top .tab{padding:0 8px}.newbtn .nb-t{display:none}.newbtn{padding:0 12px}}
+  /* R21 (11 Nov): the same savings reach up to 1599 (the Focus menu is hidden there too), so the search box keeps a real width at 1280 (it was a 56 px stub): bell hidden (it is in More), Live is a dot (tooltip keeps the words), the header Resume pill is hidden (the banner under the bar has the Resume button). */
+  /* Features > Code > Main screen puts a Code button in the bar from 1360 up (at 1280 it squeezes the search box to a 69 px stub); below that the bar has no room, so Code stays in More > Shortcuts */
+  @media (max-width:1359px){#top .pill.codebtn{display:none}}
+  @media (max-width:1599px){#top .pill.bell{display:none}#top .pill.live,#top .pill.off{font-size:0;gap:0;padding:0 11px}#top .pill.stop-btn{display:none}}
+  /* 900-1019: still one line, no sideways scroll (the bar needs ~1004 px): drop the shortcut hint on Ask (Cmd/Ctrl J still works) and the brand word */
+  @media (max-width:1359px){#top .ask-k{display:none}}
+  @media (max-width:1119px){#top .brand{display:none}}
+  @media (max-width:999px){#top{gap:4px}}
+  /* R21: below 1100 the usage captions under the faces are dropped (the name, the face and the tooltip stay; the sheet on tap has the numbers) so the bar fits one line at 12 px text */
+  @media (max-width:1099px){#top .buddy-top .bd{width:58px}#top .buddy-top .bd-lf{display:none}}
+  /* the All tab's thread-count badge widens the tab row once it shows: tighter tabs so More never leaves the screen (R19 smoke, 11 Nov) */
+  @media (max-width:1359px){#top .tab{padding:0 10px;gap:5px}#top .tcount{padding:0 5px}#top .ask-k{display:none}}
+  @media (max-width:1119px){#top .tab{padding:0 7px;gap:4px}#top .tcount{min-width:18px;padding:0 4px}}
+
+  /* ---- the strip ---- */
+  .rail-top{display:flex;align-items:center;gap:8px;min-height:36px}
+  .rail-top .todaymeta{flex:1;min-width:0;margin:0;font-size:13px}
+  .rail-toggle{flex:none;width:36px;height:36px;border:1px solid var(--line);border-radius:12px;background:var(--s1);color:var(--ink);font:600 20px/1 var(--ui);display:grid;place-items:center}
+  .rail-toggle:hover{background:var(--s2)}
+  .pace{display:flex;gap:8px;align-items:flex-start;margin:8px 0 6px;padding:7px 12px;border-radius:14px;border:1px solid var(--line);color:var(--mut);font:500 14px/1.35 var(--ui)}
+  .pace.amber{border-color:color-mix(in srgb,var(--stall) 55%,transparent);background:color-mix(in srgb,var(--stall) 10%,transparent);color:var(--stall);font-weight:600}
+  .pace-i{flex:none;font-size:12px;line-height:1.7}
+  #list .sec{font-size:14px}
+  #list .row small,#list .kid small{font-size:14px;white-space:normal}
+  #list .row b,#list .kid .nm{font-size:15px}
+  #list .clear{padding:12px 14px}
+  #list .clear b{font-size:16px}
+  #list .need .ch,#list .need .age,#list .cmd{font-size:13px}
+  #list .need .acts .b{min-height:40px;height:40px}
+
+  /* the collapsed strip */
+  .rail-c{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 0}
+  .rc-dot{position:absolute;top:3px;right:3px;width:12px;height:12px;border-radius:50%;background:var(--saf);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--saf)}
+  .rc-need{position:relative;display:inline-flex;align-items:center;gap:6px;margin-top:6px;font:600 14px var(--mono);color:var(--saf-text)}
+  .rc-need .rc-dot{position:static}
+
+  /* ---- chat: a centred reading lane (option B on the Mac: airy 720 px column; see the CHAT B block at the end of this media query) ---- */
+  /* CHAT B (You: B on the Mac): a centred ~720 px reading column, 17.5/1.65 body, airy spacing, a soft user block, a LARGE input. Same markup as the phone. */
+  .msgs{max-width:760px;padding:30px 20px 28px;gap:24px}
+  .dock-in{max-width:720px}
+  .chat-head{padding-inline:20px;background:var(--top-bg)}
+  .chat-head .hrow{max-width:720px;margin:0 auto}
+  .ht h2{font-size:17px}
+  .m .txt,.m.assistant .md{font-size:17.5px;line-height:1.65}
+  .m.assistant .md p{margin:0 0 1em}
+  .md li{margin:.3em 0}.md ul,.md ol{margin-bottom:1em}
+  .md .mh{margin:1.4em 0 .5em}
+  .md pre.code{font-size:13.5px}
+  .md table{font-size:.88em;line-height:1.45}
+  .m.user{align-self:flex-start;max-width:92%}
+  .m.user .txt{border-radius:18px;padding:11px 17px;font-size:16.5px;line-height:1.55}
+  .m.relay{align-self:flex-start}
+  .m.relay.rchip{font-size:14.5px}
+  .m.relay .rb{font-size:16px;line-height:1.6}
+  .tools{font-size:14px}.tools summary{border-bottom:0;padding:4px 2px}
+  .m .at{margin-top:8px}
+  .wt{font-size:12.5px}
+  .quick{margin-bottom:10px}
+  .jump{left:auto;right:calc(50% - 360px);justify-content:flex-end}
+  .jump{bottom:calc(var(--dockh,100px) + 10px)}
+  .dock{padding:6px 20px 22px}
+  .composer{flex-wrap:wrap;align-items:center;min-height:104px;padding:16px 14px 10px 20px;border-radius:26px;gap:4px}
+  .composer:focus-within{border-color:var(--hair-hi)}
+  .composer textarea{flex:1 0 100%;order:0;padding:0;font-size:17px;line-height:1.55;min-height:34px;max-height:240px}
+  .composer .attach,.composer .mdl,.composer #mic,.composer .send,.composer button{order:1}
+  .composer .attach{margin-right:auto;margin-left:-6px}
+  .info-in{margin-bottom:6px}
+  .md a{color:#c4bcff}
+  .md code,.m .txt code,.rb code{overflow-wrap:anywhere}
+  code.idchip{display:inline;font:500 13px/1.6 var(--mono);background:var(--s2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--ink);overflow-wrap:anywhere;word-break:break-all}
+  .m .tick,.m.note .tick,.dock .chosen .tick{color:var(--mut)}
+  /* tool / step rows: ONE quiet line */
+  .chain u:not(:first-child):before{border-top-color:var(--path)}
+  /* dock: quick replies, STOP apart, composer */
+
+  /* ---- Inspector: slides in from the right, closed by default ---- */
+  .pane-chat.insp-open{padding-right:260px}
+  .insp{display:block;position:absolute;top:0;right:0;bottom:0;width:260px;padding:14px 16px 24px;overflow-y:auto;border-left:1px solid var(--line);background:var(--s1-solid);transform:translateX(100%);visibility:hidden;transition:transform .16s ease,visibility 0s .16s}
+  .pane-chat.insp-open .insp{transform:none;visibility:visible;transition:transform .16s ease}
+  .insp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font:600 16px var(--ui)}
+  .insp-x{width:36px;height:36px;border:0;background:none;border-radius:18px;color:var(--mut);display:grid;place-items:center}
+  .insp-sec{margin:16px 0 0}
+  .insp-sec h3{margin:0 0 6px;font:600 13px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+  .insp-sec ul{list-style:none;margin:0;padding:0}
+  .insp-sec li{padding:4px 0;font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+  .insp-none,.insp-note{margin:0;color:var(--mut);font-size:14px}
+  .insp-link{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;border:0;background:none;color:var(--ink);font:500 14px var(--ui);text-align:left;padding:2px 0}
+  .insp-link:hover span{text-decoration:underline}
+  .insp-link .bd{min-width:0;min-height:0;width:16px;height:16px;padding:0;flex:none}
+
+  /* ---- teal is for "needs you" only: every other teal accent turns lilac on the desktop ---- */
+  ::selection{background:rgba(154,140,255,.45);color:var(--ink)}
+  input,textarea{caret-color:var(--run)}
+  .at-search:focus,.qother:focus{border-color:var(--run)}
+  .briefline.week{border-color:var(--line)}
+  .m.note .tick,.dock .chosen .tick{color:var(--mut)}
+
+  /* the rest of the basics: >= 14px text, a clear focus ring everywhere */
+  .sub{font-size:14px}
+  .foot,.foot button,.more{font-size:14px}
+  .need .ch,.cmd{font-size:13px}
+  :focus-visible{outline:2px solid #c4bcff;outline-offset:2px}
+}
+/* touch laptops / tablets at desktop width: 44px targets */
+@media (min-width:900px) and (pointer:coarse){
+  .tab,.newbtn,.morebtn,.topsearch,#top .pill{min-height:44px;height:44px}
+  .rail-toggle,.insp-x{width:44px;height:44px}
+  .need .acts .b,#list .need .acts .b{min-height:44px;height:44px}
+  .insp-link{min-height:44px}
+}

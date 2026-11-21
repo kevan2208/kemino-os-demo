@@ -1,0 +1,52 @@
+/* Map: top-down or left-right tree you can pan and zoom. Colours come from theme.css; teal (--saf) only ever means "needs you". */
+.mapx{display:flex;flex-direction:column;gap:8px;min-width:0}
+.map-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.map-switch{display:inline-flex;padding:3px;border-radius:999px;background:var(--seg-track);border:1px solid var(--line)}
+.map-seg{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:none;color:var(--ink);font:600 14px var(--ui);cursor:pointer}
+.map-seg[aria-pressed="true"]{background:var(--seg-bg);color:var(--seg-on)}
+.map-box{position:relative;overflow:hidden;touch-action:none;height:clamp(420px,calc(100dvh - 300px),1000px);border:1px solid var(--line);border-radius:16px;background:var(--s1);cursor:grab;-webkit-user-select:none;user-select:none}
+.map-box.panning{cursor:grabbing}
+.map-svg{display:block;outline:none;width:100%;height:100%}
+.map-ctl{display:flex;gap:6px;margin-left:auto}
+.map-zb{min-width:44px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--btn-edge);background:var(--s1-solid);color:var(--ink);font:700 18px var(--ui);cursor:pointer}
+.map-zb.fit{font-size:14px;padding:0 16px}
+.map-switch button:focus-visible,.map-zb:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.mp-edge{fill:none;stroke:var(--mut);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.mp-edge.report{stroke-dasharray:8 6;stroke-linecap:butt}
+.mp-edge.hot{stroke:var(--saf)}
+.mp-node{outline:none}
+.mp-node.thread,.mp-node.project,.mp-node.chip{cursor:pointer}
+.mp-node.chip .mp-card{stroke-dasharray:5 4}
+.mp-proj{fill:none;stroke:var(--dim);stroke-width:1.2}
+.mp-proj-t{font:600 12px var(--ui);fill:var(--mut)}
+.map-save{border:1px solid var(--line)}
+.map-save:disabled{opacity:.6}
+.mp-card{fill:var(--s1-solid);stroke:var(--dim);stroke-width:1.4}
+.mp-node.kevan .mp-card{fill:var(--s2);stroke:var(--mut)}
+.mp-node.needs-you .mp-card{stroke:var(--saf);stroke-width:2.4}
+.mp-node.failed .mp-card{stroke:var(--map-fail);stroke-width:2}
+.mp-node:focus-visible .mp-card{stroke:var(--ink);stroke-width:3}
+.mp-name{font:700 14px var(--ui);fill:var(--ink)}
+.mp-name.kevan{font-size:15px}
+.mp-who{font:500 13px var(--ui);fill:var(--mut)}
+.mp-word{font:700 13px var(--ui);fill:var(--ink)}
+.mp-word.needs-you{fill:var(--saf-text)}
+.mp-noface{fill:var(--s2);stroke:var(--path)}
+.mp-shape{fill:var(--map-done)}
+.mp-shape.working{fill:var(--map-work)}
+.mp-shape.needs-you{fill:var(--saf)}
+.mp-shape.failed{fill:var(--map-fail)}
+.mp-shape.done,.mp-shape.stalled{fill:none;stroke:var(--mut);stroke-width:2}
+.mp-tick{fill:none;stroke:var(--mut);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mp-ctx{fill:none;stroke-width:1.5}
+.mp-ctx.warn{stroke:var(--stall)}.mp-ctx.hot{stroke:var(--fail)}
+.mp-ctx-t{font:600 13px var(--ui);fill:var(--ink)}
+.mp-tog{cursor:pointer;outline:none}
+.mp-hit,.mp-tog .mp-hit{fill:transparent;stroke:none}
+.mp-tog-c{fill:var(--s1-solid);stroke:var(--mut);stroke-width:1.6}
+.mp-tog text{font:700 13px var(--mono);fill:var(--ink);pointer-events:none}
+.mp-tog:focus-visible .mp-tog-c{stroke:var(--ink);stroke-width:3}
+.map-leg{display:flex;gap:18px;flex-wrap:wrap;margin:0;padding:2px 4px;font:500 13px var(--ui);color:var(--mut);--rb:var(--mut)}
+.map-leg .lg-line{width:28px}
+@media (min-width:900px){.map-box{height:clamp(480px,calc(100dvh - 290px),1100px)}.mp-name{font-size:14px}}
+@media (prefers-reduced-motion:no-preference){.mp-card{transition:stroke .15s}}
