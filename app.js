@@ -1,5 +1,6 @@
 // Kemino OS web app. No framework, no innerHTML (thread titles and messages come from agents: untrusted), no inline script or style (CSP).
 import { renderMarkdown } from "./md.js";
+import { keepFocus, returnFocus, focusKey, moreControl } from "./keepfocus.js";
 import { renderCard, reconcile } from "./renders.js";
 import { officeModel, renderOfficeLayout, askList, stepAsk, scrollToWorker } from "./office.js";
 import { initRefresh } from "./refresh.js";
@@ -21,12 +22,15 @@ import { openDecisions } from "./decisions.js";
 import { keyAction, SHORTCUTS } from "./keys.js";
 import { escapeTarget } from "./layers.js";
 import { openTour } from "./tour.js";
+import { topicsGroup, topicsBoard, markOpened, keepOpened } from "./topics.js";
+import { openDecideSession, readyCard, problemCard, problemsOf } from "./decide.js";
 import { applyFocus, projectsOf } from "./focus.js";
 import { bannerNodes } from "./banners.js";
 import { openSnoozeSheet, pendingUntil } from "./snooze.js";
 import { FEATURES, isMain, menuGroups, openFeatures } from "./features.js";
 import { openGoogle, resultText } from "./google.js";
 import { openLife, lifeSummary } from "./life.js";
+import { createTodayLine } from "./bills.js";
 import { openCode } from "./code.js";
 import { watchFullpages } from "./fullpage.js";
 import { heardLine, ledgerTab } from "./ledgerline.js";
@@ -70,7 +74,7 @@ function h(tag, props = {}, ...kids) {
   return el;
 }
 /** Replace an element's children; accepts nested arrays and skips null/false, like h(). */
-function fill(el, ...kids) { el.replaceChildren(...kids.flat(Infinity).filter((k) => k != null && k !== false).map((k) => (k.nodeType ? k : document.createTextNode(String(k))))); }
+function fill(el, ...kids) { const nodes = kids.flat(Infinity).filter((k) => k != null && k !== false).map((k) => (k.nodeType ? k : document.createTextNode(String(k)))); keepFocus(el, () => el.replaceChildren(...nodes)); } // keepFocus: a redraw must not drop the keyboard focus to BODY
 function svg(w, paths, extra = {}) {
   const s = document.createElementNS(SVGNS, "svg");
   s.setAttribute("viewBox", extra.viewBox || "0 0 16 16"); s.setAttribute("width", w); s.setAttribute("height", w);
@@ -135,6 +139,7 @@ const S = {
   stopAsk: false, stopping: false, newAsk: null, // quick actions in the thread chat
   fd: new Map(), fdAsk: false, fdSending: false, fdHide: new Set(), fdSig: "", // front desk card: per-thread record, the one-confirm step, "Keep waiting" (by queued message id)
   rail: readCollapsed(), insp: false, // desktop: the left strip is collapsed (per device); the chat Inspector is open (never remembered: closed by default)
+  topics: store("ko.state.topics"), pend: null, board: false, readyOff: 0, // topics board (rows on Today + full board), decisions waiting for the session (counts), "Not now" on the Ready card
   answered: new Set(), dismissed: store("ko.dismissed") || {}, openFailGroups: new Set(), news: newsStart(), showAll: store("ko.showall") === true, // one question at a time: answered request ids, failures marked seen, held news, the Mac's "Show all"
 };
 const isDesk = () => matchMedia("(min-width: 900px)").matches;
@@ -231,7 +236,7 @@ async function checkLogin() {
 /** Log out: ends the session on the server (needs the CSRF token), wipes the cached threads on this device, back to the login page. */
 async function logout(e) {
   try { await post("/api/auth/logout", {}, e); }
-  catch (err) { if (!/Logged out/.test(err.message)) { toast(err.message, true); return; } }
+  catch (err) { if (!/logged out/i.test(err.message)) { toast(err.message, true); return; } }
   toLogin();
 }
 
@@ -242,7 +247,7 @@ async function logout(e) {
 let es = null, poll = (() => { try { return sessionStorage.getItem("ko.poll") === "1"; } catch { return false; } })(), pollT = null, esT = null;
 /** Side data (usage, hours, brief, health, stop) is kept like Today: shown at once from the last copy, replaced when the fresh one lands. Wiped with the rest. */
 const keep = (name, v) => store("ko.state." + name, v);
-const gotState = (d) => { setLabelsFrom(d); S.data = d; S.conn = "live"; store("ko.state." + S.scope, S.data); renderAll(); warmChats(); };
+const gotState = (d) => { setLabelsFrom(d); S.data = d; S.conn = "live"; store("ko.state." + S.scope, S.data); renderAll(); warmChats(); loadSide(); };
 async function pollState() {
   clearTimeout(pollT);
   const scope = S.scope; // the scope this request is for: if You switches while it is in flight, its answer (and its next tick) belong to nobody
@@ -334,24 +339,24 @@ function warmChats() {
 }
 
 async function post(path, body, e) {
-  if (!e || !e.isTrusted) throw new Error("Writes need a real click or key press.");
+  if (!e || !e.isTrusted) throw new Error("Tap or press a key to do that.");
   if (!csrf) await checkLogin();
   const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json", "x-kemino": "1", "x-csrf": csrf }, body: JSON.stringify({ ...body, gesture: true }) });
-  if (r.status === 401) { toLogin(); throw new Error("Logged out. Opening the login page."); }
+  if (r.status === 401) { toLogin(); throw new Error("You're logged out. Opening login…"); }
   const j = await r.json().catch(() => ({}));
   if (r.status === 409 && j.needsConfirm) { const err = new Error("confirm"); err.needsConfirm = true; err.kinds = j.kinds; throw err; }
-  if (!r.ok) throw new Error(j.error || "failed (" + r.status + ")");
+  if (!r.ok) throw new Error(j.error || "Didn't work (" + r.status + "). Try again.");
   return j;
 }
 
 /** DELETE with the same guards as post(): custom header, CSRF token, and only from a real click or key. */
 async function del(path, e) {
-  if (!e || !e.isTrusted) throw new Error("Writes need a real click or key press.");
+  if (!e || !e.isTrusted) throw new Error("Tap or press a key to do that.");
   if (!csrf) await checkLogin();
   const r = await fetch(path, { method: "DELETE", headers: { "x-kemino": "1", "x-csrf": csrf, "x-gesture": "1" } });
-  if (r.status === 401) { toLogin(); throw new Error("Logged out. Opening the login page."); }
+  if (r.status === 401) { toLogin(); throw new Error("You're logged out. Opening login…"); }
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || "failed (" + r.status + ")");
+  if (!r.ok) throw new Error(j.error || "Didn't work (" + r.status + "). Try again.");
   return j;
 }
 
@@ -824,7 +829,7 @@ const OPEN = {
   brief: () => showSheet(new Date().getHours() < 12 ? "morning" : "evening"),
   google: () => openGoogle({ h, post, del, toast, toLogin }),
   code: () => openCode({ h, toast, toLogin, openThread, opener: menuFrom }),
-  life: () => openLife({ h, post, toast, toLogin, opener: menuFrom, onClose: () => { LIFE.at = 0; renderList(); } }),
+  life: () => openLife({ h, post, toast, toLogin, opener: menuFrom, onClose: () => { LIFE.at = 0; billsToday.stale(); renderList(); } }),
 };
 function openFeature(key) { tap(key); OPEN[key]?.(); }
 // Google sends the browser back to /?google=<result>: say it quietly, clean the address, show the card.
@@ -833,7 +838,8 @@ const queue = () => openQueue({ h, post, toast, toLogin, models: S.data?.models 
 const insights = (tab) => openInsights({ h, toLogin, post, toast }, INSIGHT_TABS, tab);
 function setMode(m) {
   if (isDesk() && S.openId) location.hash = "#/"; // a tab always shows its view in the right pane: leave the open chat
-  if (S.mode === m) return;
+  const wasBoard = S.board; S.board = false; // a tab always leaves the Topics board
+  if (S.mode === m) { if (wasBoard) renderList(); return; }
   S.mode = m; store("ko.mode", m);
   if (m !== "all") tap(m === "list" ? "today" : m);
   officeSig = "";
@@ -991,7 +997,7 @@ function renderBanners() {
     dismissHealth: () => { store("ko.t3dismiss", S.health?.banner || ""); renderBanners(); },
     resume: () => openStopToday(stopDeps(), "resume"),
   });
-  el.replaceChildren(...nodes.filter((k) => k != null && k !== false));
+  keepFocus(el, () => el.replaceChildren(...nodes.filter((k) => k != null && k !== false)));
 }
 
 // ---------- hours meter ----------
@@ -1035,6 +1041,8 @@ function lifeLine_() {
   }
   return LIFE.line ? h("button", { class: "lifeline", type: "button", "data-act": "life-line", title: "Open Life", onclick: () => openFeature("life") }, h("span", {}, LIFE.line), h("span", { class: "lifeline-go", "aria-hidden": "true" }, "›")) : null;
 }
+// Quiet "next bill" line under the Life line (bills.js); hidden when nothing is open.
+const billsToday = createTodayLine({ h, get: lifeGet, open: () => openFeature("life"), rerender: () => renderList() });
 const tidyLine_ = () => tidyLine({ h, auto: S.tidyAuto, undo: undoTidyLine });
 /** The buddies: one face per AI with its state and "% left" (they replaced the usage chips). Two rows share the same five nodes' states: #buddy-row under the Today title, #buddy-top in the Mac top bar. */
 const buddies = createBuddies({ h, openThread: (id) => openThread(id), lastHeard: () => S.data?.lastHeard || S.data?.lastSeen || 0 });
@@ -1043,6 +1051,57 @@ const allView = createAllThreads({ h, contextBadge, aiFace, whoTag, badge, ago, 
   setFilter: (v) => applyFilter(v), rerender: () => { if (S.mode === "all") renderList(); } });
 function mountBuddies() { buddies.mount("home", document.getElementById("buddy-row")); buddies.mount("top", document.getElementById("buddy-top")); buddies.mount("rail", document.getElementById("buddy-rail")); }
 function fillBuddyRow() { buddies.update({ usage: S.usage, data: S.data }); mountBuddies(); }
+// ---------- topics board + decision session ----------
+// Two quiet reads that ride along with the Today state: the topic rows (GET /api/topics) and how many decisions agents filed (GET /api/decisions/pending).
+// The server owns the unread dot and the status lines; opening a topic tells it (POST /api/topics/seen) and the dot goes out at once.
+const SIDE = { at: 0, busy: false, opened: {} }; // opened: topic id -> when its "seen" write finished (Infinity while in flight): see keepOpened() in topics.js
+async function loadSide(force = false) {
+  if (SIDE.busy || document.hidden || (!force && Date.now() - SIDE.at < 4000)) return;
+  SIDE.busy = true;
+  const startedAt = Date.now();
+  try {
+    const [a, b] = await Promise.all([fetch("/api/topics"), fetch("/api/decisions/pending")]);
+    if (a.status === 401 || b.status === 401) return toLogin();
+    let changed = false;
+    if (a.ok) { const t = keepOpened((await a.json()).topics || [], SIDE.opened, startedAt, S.openId); if (JSON.stringify(t) !== JSON.stringify(S.topics)) { S.topics = t; keep("topics", t); changed = true; } }
+    if (b.ok) { const j = await b.json(), c = j.counts || { ready: 0, later: 0 }, bad = problemsOf(j.problems); if (JSON.stringify([c, bad]) !== JSON.stringify([S.pend, S.pendBad])) { S.pend = c; S.pendBad = bad; changed = true; } }
+    if (changed) renderList();
+  } catch { /* offline: the rows keep their last copy */ }
+  finally { SIDE.busy = false; SIDE.at = Date.now(); }
+}
+setInterval(() => loadSide(), 20_000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadSide(true); });
+/** You is looking at this topic: the dot goes out at once, and the server is told (a read already in flight cannot bring the dot back: keepOpened). `e` = the real click or key that opened it. */
+function seenTopic(t, e) {
+  S.topics = markOpened(S.topics, t.id); keep("topics", S.topics);
+  SIDE.opened[t.id] = Infinity;
+  const done = () => { SIDE.opened[t.id] = Date.now(); };
+  post("/api/topics/seen", { id: t.id }, e).then(done, done); // on failure the next read corrects the dot
+}
+function openTopic(t, e) { seenTopic(t, e); openThread(t.threadId); }
+// Any other way into a topic's thread (Working / Done lists, a link, the Tour, the keyboard) counts as opening it too. The route has no click of its own, so the last real click or key (< 5 s ago) stands in.
+let lastGesture = null;
+for (const ev of ["pointerdown", "click", "keydown"]) addEventListener(ev, (e) => { if (e.isTrusted) { lastGesture = { e, at: Date.now() }; if (ev !== "keydown") openedByAnyRoute(e); } }, true);
+function openedByAnyRoute(e) { const t = (S.topics || []).find((x) => x.unread && x.threadId === S.openId); if (t && e && e.isTrusted) seenTopic(t, e); }
+function topicRouteOpened() {
+  const t = (S.topics || []).find((x) => x.threadId === S.openId);
+  if (!t || !t.unread) return; // not a topic, or its dot is already off (openTopic did it)
+  S.topics = markOpened(S.topics, t.id); keep("topics", S.topics); // local dot off at once, even with no click to tell the server with
+  if (lastGesture && Date.now() - lastGesture.at < 5000) seenTopic(t, lastGesture.e);
+}
+function openBoard() { S.board = true; $("#list-scroll")?.scrollTo(0, 0); renderList(); requestAnimationFrame(() => document.querySelector("[data-act=topics-back]")?.focus({ preventScroll: true })); }
+function closeBoard() { S.board = false; renderList(); requestAnimationFrame(() => document.querySelector("[data-act=topics-board]")?.focus({ preventScroll: true })); }
+const boardPage = () => topicsBoard({ h, topics: S.topics || [], open: openTopic, back: closeBoard, sel: S.openId, headFace: () => aiFace({ instanceId: "claudeAgent", model: "" }, "sm") });
+const topicsGroup_ = () => topicsGroup({ h, topics: S.topics, open: openTopic, board: openBoard, headFace: () => aiFace({ instanceId: "claudeAgent", model: "" }, "sm") });
+// Answers that did not reach their thread: never shown as "Answered" (decide.js problemCard). Retry sends the same message again.
+const badCard_ = () => problemCard({ h, problems: S.pendBad, retry: (ids, e) => { Promise.all(ids.map((id) => post("/api/decisions/resend", { id }, e))).then(() => toast("Sending again.")).catch((er) => toast(er.message, true)).finally(() => loadSide(true)); } });
+const readyCard_ = () => { const n = S.pend ? S.pend.ready : 0; return !n || S.readyOff >= n ? null : readyCard({ h, count: n, go: () => startDecide(), notNow: () => { S.readyOff = n; renderList(); } }); };
+function startDecide() {
+  openDecideSession({ h, get: lifeGet, post, toast, toLogin, openTour: startTour, opener: () => document.querySelector('[data-act="ready-go"]'), onClose: () => { S.readyOff = 0; loadSide(true); } });
+}
+// Esc leaves the board (when no layer is open and no chat is showing).
+addEventListener("keydown", (e) => { if (e.key === "Escape" && S.board && !S.openId && !document.querySelector("[role=dialog]") && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "")) { e.preventDefault(); closeBoard(); } });
+
 // ---------- Today ----------
 const matches = (...s) => !S.filter || s.some((x) => String(x || "").toLowerCase().includes(S.filter));
 
@@ -1125,7 +1184,7 @@ function doneFold(done, scope) {
   const where = Object.entries(per).sort((a, b) => b[1] - a[1]).map(([p, k]) => p + " " + k).join(" · ");
   return h("div", { class: "dn" + (open ? " open" : "") },
     h("button", { class: "dn-h", "data-act": "done-fold", "aria-expanded": open, onclick: toggleDone },
-      h("span", { class: "tx" }, h("b", {}, scope === "all" ? "Finished" : "Done today", h("em", {}, done.length || "")), h("small", {}, done.length ? where : "Nothing finished in this window.")),
+      h("span", { class: "tx" }, h("b", {}, scope === "all" ? "Finished" : "Done today", h("em", {}, done.length || "")), h("small", {}, done.length ? where : "Nothing finished yet.")),
       done.length ? h("span", { class: "fold" }, ICONS.chev(16)) : null),
     open && done.length ? done.map((g) => groupRow(g, S.sel === g.id)) : null);
 }
@@ -1202,8 +1261,8 @@ function renderMapView(el, d) {
   const c = model.counts, bits = [c["needs-you"] && c["needs-you"] + " need you", c.working && c.working + " working", c.failed && c.failed + " failed"].filter(Boolean);
   fill(el,
     h("div", { class: "title" }, h("h1", {}, "Map"), focusChip()),
-    h("p", { class: "sub" }, [bits.length ? bits.join(" · ") : "Nothing running", "finished work is folded", d.stale ? "showing last saved data" : null].filter(Boolean).join(" · ")),
-    model.empty ? h("div", { class: "map" }, h("div", { class: "clear" }, h("b", {}, "The map is empty"), "Threads appear here when agents have worked in this window.")) : mapBlock(model, { dir, narrow: matchMedia("(max-width: 700px)").matches, open: openThread, toggle: toggleMapNode, setDir: (v) => { writeDir(localStorage, v); officeSig = ""; renderList(); } }),
+    h("p", { class: "sub" }, [bits.length ? bits.join(" · ") : "Nothing running", "finished work is tucked away", d.stale ? "showing the last saved version" : null].filter(Boolean).join(" · ")),
+    model.empty ? h("div", { class: "map" }, h("div", { class: "clear" }, h("b", {}, "Nothing on the map yet"), "Threads show up here once helpers have worked.")) : mapBlock(model, { dir, narrow: matchMedia("(max-width: 700px)").matches, open: openThread, toggle: toggleMapNode, setDir: (v) => { writeDir(localStorage, v); officeSig = ""; renderList(); } }),
     h("div", { class: "foot" }, "Tap a card to open its chat. Drag to move, pinch to zoom. ", h("button", { onclick: () => setMode("list") }, "Open the list")));
 }
 
@@ -1228,7 +1287,7 @@ function renderOfficeView(el, d) {
     h("button", { class: "os-arrow", "data-act": "ask-next", "aria-label": "Next worker who needs you", title: "Next who needs you", onclick: () => gotoAsk(1) }, "›")) : null;
   fill(el,
     h("div", { class: "title" }, h("h1", {}, "Office"), focusChip()),
-    h("p", { class: "sub" }, [asks.length ? asks.length + " need you" : "Nobody needs you", busy ? busy + " at work" : null, d.stale ? "showing last saved data" : null].filter(Boolean).join(" · ")),
+    h("p", { class: "sub" }, [asks.length ? asks.length + " need you" : "Nobody needs you", busy ? busy + " at work" : null, d.stale ? "showing the last saved version" : null].filter(Boolean).join(" · ")),
     askbar,
     h("div", { class: "office" }, model.rooms.length ? renderOfficeLayout(model, openOfficeSheet, S.spot, (id) => { if (!scrollToWorker(el, id)) openOfficeSheet(id); }) : h("div", { class: "clear" }, h("b", {}, "The office is empty"), "Rooms appear when agents are working.")),
     h("div", { class: "foot" }, model.doneCount + " finished " + (d.scope === "all" ? "in history" : "today") + ", not drawn. ", h("button", { onclick: () => setMode("list") }, "Open the list")));
@@ -1311,24 +1370,29 @@ function renderRail(d) {
   const head = [h("div", { class: "rail-top" }, h("div", { class: "todaymeta", id: "todaymeta" }), toggle),
     pace ? h("div", { class: "pace " + pace.tone, role: "status", "data-act": "pace" }, pace.tone === "amber" ? h("span", { class: "pace-i", "aria-hidden": "true" }, "\u25B2") : null, pace.text) : null];
   if (!d) { fill(el, head, h("div", { class: "skel" }), h("div", { class: "skel" })); mountBuddies(); refreshMeta(); return; }
+  if (S.board && S.mode === "list") { fill(el, boardPage()); return; } // the Topics board takes the strip; the chat of the topic opens on the right
   const queue = queueNow(), q = splitQueue(queue, showAllOn()), snoozed = d.needs.filter((n) => laterActive(n.id));
   const working = d.working.filter((g) => matches(g.title, g.project)), done = d.done.filter((g) => matches(g.title, g.project));
   const sel = S.sel, newsLine_ = freshLine(S.news);
   fill(el, head,
     h("div", { class: "sec hot" }, h("span", { class: "sec-t" }, "Needs you"), queue.length ? h("span", { class: "n" }, queue.length) : null,
-      S.news.pending ? h("span", { class: "newsb", "data-act": "news-badge", title: "News from your helpers is held until you answer" }, S.news.pending + " news") : null,
-      q.waiting ? h("button", { "data-act": "show-all", "aria-pressed": S.showAll, title: "List every card that is waiting", onclick: toggleShowAll }, S.showAll ? "Show one" : "Show all") : null,
+      S.news.pending ? h("span", { class: "newsb", "data-act": "news-badge", title: "News is held back until you answer" }, S.news.pending + " news") : null,
+      q.waiting ? h("button", { "data-act": "show-all", "aria-pressed": S.showAll, title: "Show every card", onclick: toggleShowAll }, S.showAll ? "Show one" : "Show all") : null,
       snoozed.length ? h("button", { onclick: () => { S.showLater = !S.showLater; renderList(); } }, (S.showLater ? "Hide" : "Later") + " (" + snoozed.length + ")") : null),
     newsLine_ ? h("div", { class: "newsline", "data-act": "news-line", role: "status" }, h("span", {}, newsLine_), h("button", { "aria-label": "Dismiss", onclick: () => { S.news = { ...S.news, line: "" }; renderList(); } }, ICONS.x(10))) : null,
-    q.front ? queueCard(q.front, sel) : h("div", { class: "clear" }, h("b", {}, "You're clear"), "Nothing needs you."),
+    q.front ? queueCard(q.front, sel) : h("div", { class: "clear" }, h("b", {}, "Nothing needs you")),
     hotCard({ h, usage: S.usage }), // running-hot nudge: directly under the decision card
+    badCard_(),
+    readyCard_(), // the "N decisions are ready" card (decide.js): right under the running-hot nudge, still under the decision card
     tidyLine_(),
     lifeLine_(),
-    q.waiting && !S.showAll ? h("button", { class: "waiting", "data-act": "waiting", "aria-live": "polite", title: "Go through them one by one", onclick: startTour }, "+" + q.waiting + " waiting", ICONS.chev(14)) : null,
+    billsToday.node(),
+    q.waiting && !S.showAll ? h("button", { class: "waiting", "data-act": "waiting", "aria-live": "polite", title: "Go through them one by one", onclick: startTour }, "+" + q.waiting + " more", ICONS.chev(14)) : null,
     q.rest.map((it) => queueCard(it, sel)),
-    S.showLater ? snoozed.map((n) => h("div", { class: "row", "data-id": n.id }, badge("needs-you"), h("div", { class: "mid" }, h("b", {}, tn(n.id, n.title)), h("small", {}, "Later until " + untilClock(new Date(laterUntil(n.id)).toISOString()))), h("button", { class: "b m", onclick: (e) => setLater(n.id, false, e) }, "Wake now"))) : null,
+    S.showLater ? snoozed.map((n) => h("div", { class: "row", "data-id": n.id }, badge("needs-you"), h("div", { class: "mid" }, h("b", {}, tn(n.id, n.title)), h("small", {}, "Back at " + untilClock(new Date(laterUntil(n.id)).toISOString()))), h("button", { class: "b m", onclick: (e) => setLater(n.id, false, e) }, "Bring back now"))) : null,
+    topicsGroup_(),
     h("div", { class: "sec" }, "Working", h("span", { class: "n" }, working.length || "")),
-    working.length ? working.map((g) => groupRow(g, sel === g.id)) : h("div", { class: "more" }, "No agents running right now."),
+    working.length ? working.map((g) => groupRow(g, sel === g.id)) : h("div", { class: "more" }, "Nothing running."),
     doneFold(done, d.scope));
   mountBuddies(); refreshMeta();
 }
@@ -1337,7 +1401,7 @@ function renderHomeView(el, d) {
   const queue = queueNow(), nWork = d.working.filter((g) => g.status === "working" || g.status === "stalled").length;
   const working = d.working.filter((g) => matches(g.title, g.project)), done = d.done.filter((g) => matches(g.title, g.project));
   const hgroups = working.filter((g) => g.helpers && g.helpers.length); // the working list itself is in the strip; only the helper rows live here
-  const sub = [todayDate(), queue.length ? queue.length + " need you" : "Nothing needs you", nWork ? nWork + " working" : null, d.stale ? "showing last saved data" : null].filter(Boolean).join(" \u00b7 ");
+  const sub = [todayDate(), queue.length ? queue.length + " need you" : "Nothing needs you", nWork ? nWork + " working" : null, d.stale ? "showing the last saved version" : null].filter(Boolean).join(" \u00b7 ");
   fill(el, h("div", { class: "home-col" },
     h("div", { class: "title" }, h("h1", {}, d.scope === "all" ? "All history" : "Today"), focusChip(), scopeSwitch()),
     h("p", { class: "sub", "data-act": "home-sub" }, sub),
@@ -1345,7 +1409,7 @@ function renderHomeView(el, d) {
     main("hours") || S.hoursOpen ? hoursRow({ h }, S.hours) : null,
     hgroups.length ? [h("div", { class: "sec" }, "Helpers at work", h("span", { class: "n" }, hgroups.length)), ...hgroups.map((g) => h("div", { class: "grp open" }, h("div", { class: "more hg-t" }, tn(g.id, g.title), " \u00b7 " + g.project), helperRows(g)))] : null,
     doneFold(done, d.scope), // one folded line like at 390: "Done today 5 . tap to show"
-    h("div", { class: "foot" }, d.hiddenRoots ? d.hiddenRoots + " older or background threads hidden." : "Everything in this window is shown.",
+    h("div", { class: "foot" }, d.hiddenRoots ? d.hiddenRoots + " older threads hidden." : "That's everything.",
       d.scope === "day" ? h("button", { onclick: () => setScope("all") }, "Show all history") : h("button", { onclick: () => setScope("day") }, "Back to last 24 h"))));
 }
 let topSig = "";
@@ -1357,6 +1421,7 @@ function renderDesk(d) {
   if (sig !== topSig) { topSig = sig; renderTop(); }
   if (S.openId) return; // the chat fills the right pane; the view underneath stays as it was
   const el = $("#view");
+  if (S.board && S.mode === "list") { fill(el, h("div", { class: "tp-empty", "data-act": "topics-empty" }, "Pick a topic")); return; }
   if (S.mode === "office" && d) return renderOfficeView(el, d);
   if (S.mode === "map" && d) return renderMapView(el, d);
   officeSig = "";
@@ -1375,11 +1440,12 @@ function renderList() {
   if (S.mode === "map" && d) return renderMapView(el, d);
   officeSig = "";
   if (S.mode === "all") return allView.render(el);
+  if (S.board && S.mode === "list") { fill(el, boardPage()); return; }
   if (!d) { fill(el, h("div", { class: "title" }, h("h1", {}, "Today")), h("div", { class: "skel" }), h("div", { class: "skel" }), h("div", { class: "skel" })); return; }
   const queue = queueNow(), q = splitQueue(queue, showAllOn()), snoozed = d.needs.filter((n) => laterActive(n.id));
   const working = d.working.filter((g) => matches(g.title, g.project)), done = d.done.filter((g) => matches(g.title, g.project));
   const nWork = d.working.filter((g) => g.status === "working" || g.status === "stalled").length;
-  const sub = [todayDate(), queue.length ? queue.length + " need you" : "Nothing needs you", nWork ? nWork + " working" : null, d.stale ? "showing last saved data" : null].filter(Boolean).join(" · ");
+  const sub = [todayDate(), queue.length ? queue.length + " need you" : "Nothing needs you", nWork ? nWork + " working" : null, d.stale ? "showing the last saved version" : null].filter(Boolean).join(" · ");
   const sel = S.sel;
   const newsLine_ = freshLine(S.news);
   fill(el, 
@@ -1388,23 +1454,27 @@ function renderList() {
     h("div", { class: "buddy-row", id: "buddy-row" }),
     h("div", { class: "todaymeta", id: "todaymeta" }),
     h("div", { class: "sec hot" }, h("span", { class: "sec-t" }, "Needs you"), h("span", { class: "n" }, queue.length || ""),
-      S.news.pending ? h("span", { class: "newsb", "data-act": "news-badge", title: "News from your helpers is held until you answer" }, S.news.pending + " news") : null,
-      isDesk() && q.waiting ? h("button", { "data-act": "show-all", "aria-pressed": S.showAll, title: "List every card that is waiting", onclick: toggleShowAll }, S.showAll ? "Show one" : "Show all") : null,
+      S.news.pending ? h("span", { class: "newsb", "data-act": "news-badge", title: "News is held back until you answer" }, S.news.pending + " news") : null,
+      isDesk() && q.waiting ? h("button", { "data-act": "show-all", "aria-pressed": S.showAll, title: "Show every card", onclick: toggleShowAll }, S.showAll ? "Show one" : "Show all") : null,
       snoozed.length ? h("button", { onclick: () => { S.showLater = !S.showLater; renderList(); } }, (S.showLater ? "Hide" : "Later") + " (" + snoozed.length + ")") : null),
     newsLine_ ? h("div", { class: "newsline", "data-act": "news-line", role: "status" }, h("span", {}, newsLine_), h("button", { "aria-label": "Dismiss", onclick: () => { S.news = { ...S.news, line: "" }; renderList(); } }, ICONS.x(10))) : null,
-    q.front ? queueCard(q.front, sel) : h("div", { class: "clear" }, h("b", {}, "You're clear"), "Agents will show up here when they need a yes or an answer."),
+    q.front ? queueCard(q.front, sel) : h("div", { class: "clear" }, h("b", {}, "Nothing needs you"), "Questions from your helpers show up here."),
     hotCard({ h, usage: S.usage }), // running-hot nudge: one card below the decision card, above the list
+    badCard_(),
+    readyCard_(), // the "N decisions are ready" card (decide.js): right under the running-hot nudge, still under the decision card
     tidyLine_(),
     lifeLine_(),
-    q.waiting && !S.showAll ? h("button", { class: "waiting", "data-act": "waiting", "aria-live": "polite", title: "Go through them one by one", onclick: startTour }, "+" + q.waiting + " waiting", ICONS.chev(14)) : null,
+    billsToday.node(),
+    q.waiting && !S.showAll ? h("button", { class: "waiting", "data-act": "waiting", "aria-live": "polite", title: "Go through them one by one", onclick: startTour }, "+" + q.waiting + " more", ICONS.chev(14)) : null,
     q.rest.map((it) => queueCard(it, sel)),
-    S.showLater ? snoozed.map((n) => h("div", { class: "row", "data-id": n.id }, badge("needs-you"), h("div", { class: "mid" }, h("b", {}, tn(n.id, n.title)), h("small", {}, "Later until " + untilClock(new Date(laterUntil(n.id)).toISOString()))), h("button", { class: "b m", onclick: (e) => setLater(n.id, false, e) }, "Wake now"))) : null,
+    S.showLater ? snoozed.map((n) => h("div", { class: "row", "data-id": n.id }, badge("needs-you"), h("div", { class: "mid" }, h("b", {}, tn(n.id, n.title)), h("small", {}, "Back at " + untilClock(new Date(laterUntil(n.id)).toISOString()))), h("button", { class: "b m", onclick: (e) => setLater(n.id, false, e) }, "Bring back now"))) : null,
+    topicsGroup_(),
     briefLines(),
     main("hours") || S.hoursOpen ? hoursRow({ h }, S.hours) : null,
     h("div", { class: "sec" }, "Working", h("span", { class: "n" }, working.length || "")),
-    working.length ? working.map((g) => groupRow(g, sel === g.id)) : h("div", { class: "more" }, "No agents running right now."),
+    working.length ? working.map((g) => groupRow(g, sel === g.id)) : h("div", { class: "more" }, "Nothing running."),
     doneFold(done, d.scope),
-    h("div", { class: "foot" }, d.hiddenRoots ? d.hiddenRoots + " older or background threads hidden." : "Everything in this window is shown.",
+    h("div", { class: "foot" }, d.hiddenRoots ? d.hiddenRoots + " older threads hidden." : "That's everything.",
       d.scope === "day" ? h("button", { onclick: () => setScope("all") }, "Show all history") : h("button", { onclick: () => setScope("day") }, "Back to last 24 h")),
   );
   mountBuddies();
@@ -1848,6 +1918,7 @@ function route() {
   $("#app").dataset.mode = S.mode;
   if (changed) {
     dropToast();
+    if (id) topicRouteOpened();
     S.msgConfirm = null; S.stopAsk = false; S.newAsk = null; S.fdAsk = false; S.justOpened = true;
     S.chat = id ? S.chats.get(id) || store("ko.chat." + id) || null : null;
     if (S.chat) S.chats.set(id, S.chat);
@@ -1904,6 +1975,7 @@ function closeLayer(l) {
   if (l.kind === "inspector") return toggleInspector();
   if (l.kind === "info") return openInfo(false);
   if (l.kind === "question") { const sh = document.querySelector(".qsheet"); return sh?.escNow ? sh.escNow() : foldQuestion(); }
+  if (typeof l.el.escNow === "function") return l.el.escNow(); // a layer that folds one step at a time (the decision session: presets first, then the session)
   const x = l.el.querySelector(".np-x, .rfs-x, .sz-x, .srch-done, .dk-x, [aria-label=Close]");
   if (x) x.click(); else l.el.click(); // no close button (lightbox, tour backdrop): the same tap that closes it
 }
@@ -1921,7 +1993,7 @@ addEventListener("keydown", (e) => {
 // Focus goes back to what opened a layer, however it was closed (Esc, tap outside, its own button).
 {
   let trig = null;
-  const note = (e) => { const t = e.target && e.target.closest ? e.target.closest("button,a,input,select,textarea,[role=button],[role=tab],[tabindex]") : null; if (t) trig = { el: t, sel: t.dataset && t.dataset.act ? `[data-act="${t.dataset.act}"]` : t.getAttribute("aria-label") ? `[aria-label="${t.getAttribute("aria-label").replace(/"/g, "")}"]` : "" }; };
+  const note = (e) => { const t = e.target && e.target.closest ? e.target.closest("button,a,input,select,textarea,[role=button],[role=tab],[tabindex]") : null; if (t) trig = { el: t, key: focusKey(t, document.body), sel: t.dataset && t.dataset.act ? `[data-act="${t.dataset.act}"]` : t.getAttribute("aria-label") ? `[aria-label="${t.getAttribute("aria-label").replace(/"/g, "")}"]` : "" }; };
   addEventListener("pointerdown", note, true); addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") note(e); else if (e.key.length === 1) trig = null; }, true); // a shortcut key ("?") opened it: nothing to return to
   const mark = (n) => n.nodeType === 1 && (n.matches("[role=dialog]") ? [n] : [...n.querySelectorAll("[role=dialog]")]);
   new MutationObserver((muts) => {
@@ -1929,13 +2001,12 @@ addEventListener("keydown", (e) => {
       for (const n of m.addedNodes) for (const d of mark(n) || []) if (!d.__opener && trig) d.__opener = trig;
       for (const n of m.removedNodes) for (const d of mark(n) || []) {
         const o = d.__opener; if (!o) continue;
-        const back = () => {
-          const a = document.activeElement;
-          if (a && a !== document.body && a.isConnected && !d.contains(a)) return; // focus already lives somewhere useful
-          const el = o.el.isConnected ? o.el : o.sel ? document.querySelector(o.sel) : null;
-          if (el && !el.closest("[inert]")) el.focus({ preventScroll: true });
-        };
-        back(); for (const ms of [80, 250, 600]) setTimeout(back, ms); // the page re-draws its top bar right after a close and drops the focus: ask again
+        // returnFocus asks now and keeps watching ~6 s: the page re-draws its top bar / list right after a close (and again when a refresh lands) and drops the focus
+        returnFocus(() => {
+          const el = o.el.isConnected ? o.el : o.sel ? document.querySelector(o.sel) : o.key ? [...document.querySelectorAll(o.key.sel)][o.key.idx] : null;
+          if (document.querySelector("[role=dialog]")) return null;
+          return el && !el.closest("[inert]") && el.getClientRects().length ? el : moreControl(); // the opener was a menu item that is gone: back to the More control it came from
+        });
       }
     }
   }).observe(document.body, { childList: true, subtree: true });

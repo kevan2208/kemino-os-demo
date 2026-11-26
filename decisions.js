@@ -12,7 +12,7 @@ export function whenText(iso, now = Date.now()) {
   return d.toLocaleDateString([], { day: "numeric", month: "short" }) + " " + hm;
 }
 export const answerClass = (a) => (a === "no" || a === "cancelled" ? "no" : "yes");
-export const sourceText = (s, rule) => (s === "auto (rule)" ? (rule ? "answered by rule " + rule : "auto (rule)") : s === "mac" ? "Mac" : "phone");
+export const sourceText = (s, rule) => (s === "auto (rule)" ? (rule ? "answered by rule " + rule : "auto (rule)") : s === "agent decided" ? "agent decided" : s === "mac" ? "Mac" : "phone");
 
 /** deps: { h, del(path, event), post(path, body, event), toast(msg, isError), toLogin() }. */
 export function openDecisions({ h, del, post, toast, toLogin }) {

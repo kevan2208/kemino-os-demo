@@ -3,6 +3,8 @@
 // or downloads an .ics file; "Reply", "Open" and "Unsubscribe" are plain links out. Later / Done / Snooze marks live in Kemino's own file on the
 // server (shared by all your devices). All text goes in as text nodes (mail comes from outside): no innerHTML, no inline style or handler (CSP).
 import { sortMail, groupMail, applyMarks, suggestAction, decodeEntities, nameOf, realAtt, age, gmailLink, driveSearchLink, templateLink, buildIcs, freeUntil, groupByDay, timeText, lifeLine, tonight, wall } from "./life-core.js";
+import { returnFocus, moreControl } from "./keepfocus.js";
+import { createBills } from "./bills.js";
 
 const GROUPS = [["needs", "Needs you"], ["fyi", "FYI"], ["noise", "Noise"]];
 const DRIVE_ICON = (mime) => (/folder$/.test(mime) ? "Folder" : /spreadsheet|excel|csv/.test(mime) ? "Sheet" : /document|word|text/.test(mime) ? "Doc" : /presentation|powerpoint/.test(mime) ? "Slides" : /pdf/.test(mime) ? "PDF" : /image/.test(mime) ? "Image" : "File");
@@ -39,10 +41,23 @@ export async function lifeSummary(get, now = Date.now()) {
 /** deps: { h, post, toast, toLogin }. */
 export function openLife({ h, post, toast, toLogin, onClose, opener: from }) {
   if (document.querySelector(".lf-wrap")) return;
+  let gate = null; // the "Google is off / not connected" line; bills still show above it
+  const bills = createBills({ h, post, say: (t) => say(t), redraw: () => redraw() });
+  const redraw0 = () => (D ? draw() : body.replaceChildren(...[status, bills.node(), gate].filter(Boolean)));
+  // A redraw replaces every node. Keep each scroller where it was (the screen and the two desktop columns) and keep focus on the same bill's switch/button.
+  const redraw = () => {
+    const sc = () => [wrap.querySelector(".lf-card"), body, ...body.querySelectorAll(".lf-col")].filter(Boolean), tops = sc().map((e) => e.scrollTop);
+    const a = document.activeElement, bk = a && body.contains(a) && a.closest?.("[data-bill]") ? { id: a.closest("[data-bill]").getAttribute("data-bill"), cls: a.classList.contains("bl-tg") ? ".bl-tg" : a.classList.contains("bl-main") ? ".bl-main" : "" } : null;
+    redraw0();
+    const put = () => { sc().forEach((e, i) => { if (tops[i] != null && e.scrollTop !== tops[i]) e.scrollTop = tops[i]; }); };
+    put();
+    if (bk && bk.cls && (!document.activeElement || document.activeElement === document.body || !body.contains(document.activeElement))) body.querySelector('[data-bill="' + bk.id.replace(/["\\]/g, "") + '"]' + bk.cls)?.focus?.({ preventScroll: true });
+    requestAnimationFrame(put);
+  };
   let D = null, openNoise = false, openCal = {}, driveQ = "", driveRes = null, folder = null, busy = "";
   const opener = from || document.activeElement;
-  const close = () => { onClose?.(); wrap.classList.remove("in"); setTimeout(() => wrap.remove(), 200); removeEventListener("keydown", onKey, true); const restore = () => { const back = opener?.isConnected ? opener : opener?.dataset?.act ? document.querySelector("[data-act=\"" + opener.dataset.act + "\"]") : null; if (back) { try { back.focus({ preventScroll: true }); } catch { /* gone */ } } }; for (const ms of [260, 900, 2000]) setTimeout(() => { if (document.activeElement === document.body || !document.activeElement) restore(); }, ms); };
-  const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+  const close = () => { onClose?.(); wrap.classList.remove("in"); setTimeout(() => wrap.remove(), 200); removeEventListener("keydown", onKey, true); returnFocus(() => (opener?.isConnected ? opener : opener?.dataset?.act ? document.querySelector("[data-act=\"" + opener.dataset.act + "\"]") : opener?.dataset?.tab ? document.querySelector("[data-tab=\"" + opener.dataset.tab + "\"]") : null) || moreControl()); };
+  const onKey = (e) => { if (e.key === "Escape" && !document.querySelector(".bl-wrap")) { e.stopPropagation(); close(); } };
   const status = h("p", { class: "lf-status", role: "status", "aria-live": "polite" }, "Loading…");
   const body = h("div", { class: "lf-body" }, status);
   const wrap = h("div", { class: "np-wrap lf-wrap", role: "dialog", "aria-modal": "true", "aria-label": "Life", onclick: (e) => { if (e.target === wrap) close(); } },
@@ -60,14 +75,15 @@ export function openLife({ h, post, toast, toLogin, onClose, opener: from }) {
   }
   const say = (t) => { status.textContent = t || ""; };
   async function load() {
+    const billsDone = bills.load(get).then(() => redraw());
     try {
       const st = await get("/api/google/status");
-      if (!st.ok || !st.j.enabled || st.j.state === "off") { body.replaceChildren(h("p", { class: "lf-status" }, "Google is off. Switch it on in Features first.")); return; }
-      if (st.j.state === "not-connected" || st.j.state === "reconnect") { body.replaceChildren(h("p", { class: "lf-status" }, "Google is not connected. Connect it from More > Google.")); return; }
+      if (!st.ok || !st.j.enabled || st.j.state === "off") { gate = h("p", { class: "lf-status" }, "Google is off. Switch it on in Features first."); say(""); await billsDone; redraw(); return; }
+      if (st.j.state === "not-connected" || st.j.state === "reconnect") { gate = h("p", { class: "lf-status" }, "Google is not connected. Connect it from More > Google."); say(""); await billsDone; redraw(); return; }
       D = await loadLife(get);
       say("");
       draw();
-    } catch (err) { body.replaceChildren(h("p", { class: "lf-status err" }, err.message)); }
+    } catch (err) { gate = h("p", { class: "lf-status err" }, err.message); say(""); await billsDone; redraw(); }
   }
 
   /** Sets a mark: the page changes at once, the server file follows; on a failure the old marks come back and a quiet line says why. */
@@ -180,7 +196,7 @@ export function openLife({ h, post, toast, toLogin, onClose, opener: from }) {
     body.replaceChildren(status,
       h("div", { class: "lf-cols" },
         h("div", { class: "lf-col lf-col-mail" }, sec("Mail", mailSection())),
-        h("div", { class: "lf-col lf-col-side" }, sec("Next 7 days", calSection()), sec("Drive", driveSection()),
+        h("div", { class: "lf-col lf-col-side" }, bills.node(), sec("Next 7 days", calSection()), sec("Drive", driveSection()),
           h("div", { class: "lf-out" }, link("", "Gmail ↗", "https://mail.google.com/mail/u/0/#inbox"), link("", "Calendar ↗", "https://calendar.google.com/"), link("", "Drive ↗", "https://drive.google.com/drive/recent")))));
     if (keep) { const q = body.querySelector(".lf-q"); q?.focus(); try { q.setSelectionRange(keep.s, keep.s); } catch { /* not a text field */ } }
   }

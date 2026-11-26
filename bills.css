@@ -1,0 +1,44 @@
+/* Bills in Life (mock A). Transform/opacity only for motion; targets >= var(--tap); reduced motion respected. */
+.lf-sec-bills{margin:6px 0 12px}
+.bl-head{display:flex;align-items:center;gap:10px;margin:14px 0 6px}.bl-head h3{margin:0}.bl-sum{flex:1;min-width:0;color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-add{margin-left:auto}
+.bl-next{display:grid;gap:8px;padding:14px;border-radius:14px;background:var(--card-need);border:1px solid var(--cb);box-shadow:0 0 28px -10px rgba(78,230,214,.28);margin:0 0 6px}
+.bl-nt{display:flex;justify-content:space-between;align-items:center;gap:8px}.bl-nd{color:var(--mut);font-size:13px}
+.bl-nname{font:600 20px/1.2 var(--ui);overflow-wrap:anywhere}
+.bl-fig{font:700 30px/1 var(--ui);font-variant-numeric:tabular-nums}
+.bl-nb{display:flex;gap:8px;margin-top:4px}.bl-nb .bl-pay{flex:1}
+.bl-due{display:inline-block;font:600 11.5px var(--ui);padding:2px 9px;border-radius:9px;border:1px solid var(--line);color:var(--mut)}
+.bl-due.hot{background:var(--fail);border-color:var(--fail);color:var(--on-fail)}.bl-due.soon{color:var(--stall);border-color:var(--stall)}
+.bl-sec{display:flex;align-items:center;gap:8px;margin:10px 2px 6px;font:600 13px var(--ui);color:var(--mut)}
+.bl-row{display:grid;grid-template-columns:1fr auto auto;gap:0 10px;align-items:center;min-height:56px;padding:4px 8px 4px 4px;background:var(--s1);border:1px solid var(--line);border-radius:12px;transition:opacity .2s ease-out}
+.bl-row.paid{opacity:.6}.bl-row.paid .bl-n{text-decoration:line-through}
+.bl-main{display:grid;gap:1px;min-height:var(--tap);padding:6px 10px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-radius:10px;min-width:0}
+.bl-main:hover{background:var(--pill)}
+.bl-n{font-weight:600;overflow-wrap:anywhere}.bl-d{color:var(--mut);font-size:12.5px}
+.bl-amt{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.bl-tg{position:relative;width:52px;height:44px;border:0;background:none;cursor:pointer;padding:0;border-radius:14px}
+.bl-tg i{position:absolute;top:8px;left:2px;width:48px;height:28px;border-radius:14px;background:var(--s2);border:1px solid var(--btn-edge);transition:background .15s}
+.bl-tg i:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--dim);transition:transform .2s cubic-bezier(.2,.8,.2,1),background .15s}
+.bl-tg.on i{background:var(--saf);border-color:var(--saf)}.bl-tg.on i:after{transform:translateX(20px);background:var(--on)}
+.bl-tg:active i:after{transform:scale(.9)}.bl-tg.on:active i:after{transform:translateX(20px) scale(.9)}
+.bl-tg:focus-visible,.bl-main:focus-visible,.bl-in:focus-visible,.bl-seg:focus-visible{outline:2px solid var(--run);outline-offset:2px}
+.bl-undo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;padding:2px 12px;border-radius:12px;background:var(--pill);min-height:var(--tap);animation:bl-in .2s ease-out}
+@keyframes bl-in{from{opacity:0;transform:translateY(-4px)}}
+/* sheet */
+.bl-wrap{opacity:0;transition:opacity .2s ease-out;z-index:80}.bl-wrap.in{opacity:1}
+.bl-card{transform:translateY(24px);transition:transform .3s cubic-bezier(.2,.8,.2,1)}.bl-wrap.in .bl-card{transform:none}
+.bl-form{display:grid;gap:12px}
+.bl-f{display:grid;gap:4px}.bl-f>span{color:var(--mut);font-size:13px;font-weight:600}
+.bl-in{width:100%;min-height:var(--tap);border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--ink);font:inherit;font-size:16px;padding:0 12px;color-scheme:dark}
+.bl-segs{display:flex;gap:8px}.bl-seg{flex:1;min-height:var(--tap);border-radius:12px;border:1px solid var(--btn-edge);background:var(--btn-bg);color:var(--ink);font:600 14px var(--ui);cursor:pointer}.bl-seg.on{border-color:var(--saf);color:var(--saf-text)}
+.bl-msg{margin:0;min-height:1.3em;color:var(--fail);font-size:13px}
+.bl-btns{display:flex;flex-wrap:wrap;gap:8px}.bl-save{flex:1}.bl-del{margin-left:auto;color:var(--fail)}
+@media (max-width:899px){.lf-sec-bills{order:-1}.lf-body>.lf-status{order:-2}.lf-body>.lf-status:empty{display:none}}
+@media (min-width:900px){
+  /* the add/edit sheet is a full opaque page here, like Life itself: no scrim, no blur, nothing floating over content */
+  .bl-wrap{align-items:stretch;justify-content:stretch;background:var(--s1-solid);backdrop-filter:none;-webkit-backdrop-filter:none}
+  .bl-wrap .bl-card{width:100%;max-width:none;max-height:none;height:100%;border:0;border-radius:0;box-shadow:none;transform:none;padding:0 0 40px;overflow-y:auto}
+  .bl-wrap .np-head{display:flex;margin:0;padding:10px max(24px,env(safe-area-inset-left));border-bottom:1px solid var(--line);font-size:18px}.bl-wrap .np-x{display:inline-flex}
+  .bl-wrap .bl-form{width:min(480px,100% - 48px);margin:24px auto 0}
+}
+@media (prefers-reduced-motion:reduce){.bl-wrap,.bl-card,.bl-tg i,.bl-tg i:after,.bl-row,.bl-undo{transition:none;animation:none}.bl-card{transform:none}}

@@ -1,1 +1,3 @@
 #demo-badge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);right:8px;z-index:99;background:#ffb21f;color:#100d17;font:600 10px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em;padding:5px 8px;border-radius:99px;pointer-events:none;opacity:.95}
+/* the badge is a small tab hanging from the top edge, left, in the empty strip above the header controls; it never covers a control (checked at 390 and 1280) */
+#demo-badge{top:env(safe-area-inset-top,0px);right:auto;left:8px;bottom:auto;font-size:9px;padding:2px 7px 3px;border-radius:0 0 8px 8px}

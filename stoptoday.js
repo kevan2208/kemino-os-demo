@@ -8,24 +8,24 @@ const plural = (n, one, many = one + "s") => n + " " + (n === 1 ? one : many);
 export function stopLine(st) {
   if (!st || !st.stopped) return "";
   const parts = ["Stopped for today" + (st.until ? ", back on " + when(st.until) : "")];
-  parts.push(st.paused.length ? plural(st.paused.length, "automation") + " paused" : "no automations were due");
+  parts.push(st.paused.length ? plural(st.paused.length, "automation") + " paused" : "none were due");
   parts.push(st.running ? plural(st.running, "thread") + " still running" : "nothing running");
   return parts.join(" · ");
 }
 
 /** The sentences in the dialog. Pure. `mode` is "stop" or "resume". */
 export function stopDialogText(st, mode) {
-  if (!st) return { lead: "Checking what is scheduled…", items: [], notes: [] };
+  if (!st) return { lead: "Checking what's scheduled…", items: [], notes: [] };
   const notes = [];
   if (mode === "resume") {
-    notes.push("Only these are turned back on. Anything else stays as it is.");
+    notes.push("Only these are turned back on. Everything else stays as is.");
     if (st.failed && st.failed.length) notes.push(plural(st.failed.length, "automation") + " could not be paused earlier: " + st.failed.map((f) => f.title).join(", ") + ".");
-    return { lead: st.paused.length ? "Turn back on " + plural(st.paused.length, "automation") + "?" : "Nothing was paused. Clear the stopped flag?", items: st.paused, notes };
+    return { lead: st.paused.length ? "Turn back on " + plural(st.paused.length, "automation") + "?" : "Nothing was paused. Clear the stop?", items: st.paused, notes };
   }
   const items = (st.preview || []).map((p) => p.title + (p.nextRun ? " (next " + when(p.nextRun) + ")" : ""));
-  notes.push(st.running ? plural(st.running, "thread") + " working right now will keep going. Nothing running is interrupted." : "Nothing is running right now. Running threads are never interrupted.");
+  notes.push(st.running ? plural(st.running, "thread") + (st.running === 1 ? " is" : " are") + " working and will keep going." : "Nothing is running. Running threads are never stopped.");
   if (st.webhook) notes.push(plural(st.webhook, "webhook automation") + " cannot be predicted and will not be paused.");
-  return { lead: items.length ? "Pause " + plural(items.length, "automation") + " that would run before 07:00?" : "No automation is due before 07:00. Set the stopped flag anyway?", items, notes };
+  return { lead: items.length ? "Pause " + plural(items.length, "automation") + " that would run before 07:00?" : "Nothing is due before 07:00. Stop anyway?", items, notes };
 }
 
 /** deps: { h, post(path, body, event), toast(msg, isError), toLogin(), onChange() }. mode: "stop" | "resume". */
@@ -70,7 +70,7 @@ export function openStopToday({ h, post, toast, toLogin, onChange }, mode = "sto
     if (error) kids.push(h("p", { class: "au-err" }, error), h("button", { class: "np-btn", onclick: load }, "Try again"));
     else if (!st) kids.push(h("div", { class: "skel" }), h("div", { class: "skel" }));
     else if (mode === "stop" && st.stopped) kids.push(h("p", {}, "Already stopped for today."), h("button", { class: "np-btn", onclick: close }, "Close"));
-    else if (mode === "resume" && !st.stopped) kids.push(h("p", {}, "Not stopped. Nothing to resume."), h("button", { class: "np-btn", onclick: close }, "Close"));
+    else if (mode === "resume" && !st.stopped) kids.push(h("p", {}, "Not stopped, so nothing to resume."), h("button", { class: "np-btn", onclick: close }, "Close"));
     else {
       const t = stopDialogText(st, mode);
       kids.push(h("p", { class: "st-lead" }, t.lead));

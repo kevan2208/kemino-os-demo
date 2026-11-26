@@ -39,14 +39,14 @@
   /* the buddy row (5 faces, names and usage under each) sits right after the brand, as before: 5 x 58 = 290 px */
   #top .buddy-top .bd{width:70px;flex:none}
   #top .buddy-top .buddies{gap:0;padding:12px 4px 4px}
-  #top>.topsearch{flex:4 1 90px;min-width:56px}
+  #top>.topsearch{flex:4 1 160px;min-width:160px}
   #top .focus .sel-wrap select{max-width:120px}
   #top .pill.live,#top .pill.off{flex:none;max-width:none}
   #top .pill.bell{flex:none}
   @media (max-width:1599px){#top .focus{display:none}}
-  @media (max-width:1099px){#top{gap:8px}#top .pill{max-width:150px}.tab{padding:0 10px}.topsearch{min-width:70px}}
+  @media (max-width:1099px){#top{gap:8px}#top .pill{max-width:150px}.tab{padding:0 10px}.topsearch{min-width:160px}}
   /* 900-1099: one line without wrapping. Here the search box shrinks to a stub (the / key still focuses it), the bell is hidden (it is in More), the words on "+ New thread" and on the Live pill (dot + tooltip) */
-  @media (max-width:1279px){.topsearch{min-width:48px}#top .brand{font-size:16px}#top{gap:6px}#top .tab{padding:0 8px}.newbtn .nb-t{display:none}.newbtn{padding:0 12px}}
+  @media (max-width:1279px){.topsearch{min-width:160px}#top .brand{font-size:16px}#top{gap:6px}#top .tab{padding:0 8px}.newbtn .nb-t{display:none}.newbtn{padding:0 12px}}
   /* R21 (11 Nov): the same savings reach up to 1599 (the Focus menu is hidden there too), so the search box keeps a real width at 1280 (it was a 56 px stub): bell hidden (it is in More), Live is a dot (tooltip keeps the words), the header Resume pill is hidden (the banner under the bar has the Resume button). */
   /* Features > Code > Main screen puts a Code button in the bar from 1360 up (at 1280 it squeezes the search box to a 69 px stub); below that the bar has no room, so Code stays in More > Shortcuts */
   @media (max-width:1359px){#top .pill.codebtn{display:none}}
@@ -57,6 +57,11 @@
   @media (max-width:999px){#top{gap:4px}}
   /* R21: below 1100 the usage captions under the faces are dropped (the name, the face and the tooltip stay; the sheet on tap has the numbers) so the bar fits one line at 12 px text */
   @media (max-width:1099px){#top .buddy-top .bd{width:58px}#top .buddy-top .bd-lf{display:none}}
+  /* R22 (21 Nov): the search box was an 83 px stub at 900 (56 at 1440 with the All badge). Below 1100 the faces get narrower and Ask is an icon (its tooltip + Cmd/Ctrl J stay), so the box keeps >= 160 px there and >= 220 from 1440 up (below that the bar has no room: 1280 overflowed with 220) */
+  @media (max-width:1439px){#top .buddy-top .bd{width:58px}}
+  /* order matters: this 1439 rule must come BEFORE the 1099 one or it wins and the faces stay 58 px (900 overflowed by 17 px, R22 smoke row 37) */
+  @media (max-width:1099px){#top .buddy-top .bd{width:46px}#top .ask .ask-t{display:none}#top .ask{padding:0 9px}}
+  @media (min-width:1440px){#top>.topsearch{min-width:220px}}
   /* the All tab's thread-count badge widens the tab row once it shows: tighter tabs so More never leaves the screen (R19 smoke, 11 Nov) */
   @media (max-width:1359px){#top .tab{padding:0 10px;gap:5px}#top .tcount{padding:0 5px}#top .ask-k{display:none}}
   @media (max-width:1119px){#top .tab{padding:0 7px;gap:4px}#top .tcount{min-width:18px;padding:0 4px}}

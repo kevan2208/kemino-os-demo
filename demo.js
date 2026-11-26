@@ -80,6 +80,35 @@
   const DRIVE = [{ id: "dr1", name: "Stall price list.pdf", mime: "application/pdf", modified: ago(26), link: "#" }, { id: "dr2", name: "Price planning 2027", mime: "application/vnd.google-apps.spreadsheet", modified: ago(120), link: "#" }, { id: "dr3", name: "Pricing notes", mime: "application/vnd.google-apps.document", modified: ago(216), link: "#" }, { id: "fo1", name: "Sample folder", mime: "application/vnd.google-apps.folder", modified: ago(48), link: "#" }];
   const lifeMarks = {}; let lifePins = [{ id: "fo1", name: "Sample folder" }];
 
+  // ---- R23 sample data (all invented): bills, topics, decisions waiting for the Ready session ----
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const dayKeyOf = (t) => { const d = new Date(t + 4 * hr); return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()); };
+  const todayKey = () => dayKeyOf(Date.now());
+  const dayNumOf = (s) => { const [y, m, d] = s.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, d) / 86400_000); };
+  let billSeq = 10, lastDeleted = null;
+  const BILLS = [
+    { id: "bill1", name: "Water", amount: 300, due: dayKeyOf(now + 1 * 86400_000), repeat: "monthly", paid: false, paidAt: null, lastPaid: null },
+    { id: "bill2", name: "Internet", amount: 500, due: dayKeyOf(now + 4 * 86400_000), repeat: "monthly", paid: false, paidAt: null, lastPaid: null },
+    { id: "bill3", name: "Rent", amount: 5000, due: dayKeyOf(now + 9 * 86400_000), repeat: "monthly", paid: false, paidAt: null, lastPaid: null },
+    { id: "bill4", name: "Phone", amount: 200, due: dayKeyOf(now + 13 * 86400_000), repeat: "none", paid: false, paidAt: null, lastPaid: null },
+    { id: "bill5", name: "Gym", amount: 400, due: dayKeyOf(now - 3 * 86400_000), repeat: "none", paid: true, paidAt: dayKeyOf(now - 4 * 86400_000), lastPaid: null },
+  ];
+  const billsView = () => { const t = todayKey(); const v = BILLS.map((b) => { const days = dayNumOf(b.due) - dayNumOf(t); return { ...b, days, overdue: !b.paid && days < 0 }; }); v.sort((a, b) => (a.paid - b.paid) || (a.due < b.due ? -1 : a.due > b.due ? 1 : 0)); return { bills: v, today: t }; };
+  const TOPICS = [
+    { id: "planner", name: "Planner", threadId: "d-w2", head: true, status: "Two decisions are ready for you.", updatedAt: now - 5 * min, unread: true },
+    { id: "booking", name: "Booking app", threadId: "d-w1", head: false, status: "Calendar is wired to the form, tests running.", updatedAt: now - 12 * min, unread: true },
+    { id: "video", name: "Video tool", threadId: "d-d2", head: false, status: "Dark theme colours added, contrast checked.", updatedAt: now - 3 * hr, unread: false },
+    { id: "notes", name: "Notes", threadId: "d-d3", head: false, status: "Summary of last week is ready.", updatedAt: now - 7 * hr, unread: false },
+  ];
+  const PD = (id, topic, title, detail, options, def, mins) => ({ id, topicId: null, threadId: null, from: topic, topic, title, detail, options, default: def, createdAt: now - mins * min, status: "open", answer: null, how: null, laterUntil: 0, delivery: "none", undoUntil: 0 });
+  const PENDING = [
+    PD("pd1", "Booking app", "Which colour for the Book button?", "Both pass the contrast check on a phone.", ["Green", "Blue", "Keep the current one"], 0, 30),
+    PD("pd2", "Video tool", "Publish the release notes today?", "They are ready and reviewed.", ["Publish today", "Wait until Monday"], 0, 20),
+    PD("pd3", "Notes", "Archive drafts older than 30 days?", "12 drafts would move to the archive. Nothing is deleted.", ["Archive them", "Leave them", "Ask me again next week"], 0, 10),
+  ];
+  const pendingView = () => { const t = Date.now(), items = PENDING.filter((d) => d.status === "open" && d.laterUntil <= t), later = PENDING.filter((d) => d.status === "open" && d.laterUntil > t);
+    return { items, later, recent: PENDING.filter((d) => d.status === "answered"), problems: [], counts: { ready: items.length, later: later.length, answered: PENDING.filter((d) => d.status === "answered").length, undo: 0, failed: 0 }, now: t, existing: { questions: 0, permissions: state.needs.length, secrets: 0, total: state.needs.length } }; };
+
   // Fake event streams
   const listeners = new Set();
   const push = () => listeners.forEach((f) => f());
@@ -133,6 +162,46 @@
     if (url.startsWith("/api/threads/snippets")) { const ids = decodeURIComponent(url.split("ids=")[1] || "").split(","); return json({ snippets: Object.fromEntries(ids.filter((i) => SNIPS[i]).map((i) => [i, { text: SNIPS[i], role: "assistant", at: at(5) }])) }); }
     if (url.startsWith("/api/threads")) { const arch = url.includes("archived=1"); return json({ projects: [], threads: ALL.filter((t) => arch || !t.archived), complete: true, source: "http", archivedIncluded: arch, at: now }); }
     if (url.startsWith("/api/thread")) { const c = chatFor(decodeURIComponent(new URL(url, location.href).searchParams.get("id"))); return c ? json(c) : json({ error: "not found" }, 404); }
+    const method = (init?.method || "GET").toUpperCase();
+    // ---- R23 screens: Bills, Topics board, Ready/Decision session. INVENTED data; every write only changes memory. ----
+    if (url === "/api/bills" || url.startsWith("/api/bills/")) {
+      let b = {}; try { b = JSON.parse(init?.body || "{}"); } catch {}
+      const op = url.slice("/api/bills".length + 1);
+      const bad = (m) => json({ error: m }, 400);
+      const find = (id) => BILLS.find((x) => x.id === id);
+      if (method === "POST") {
+        if (op === "add" || op === "edit") {
+          const name = String(b.name || "").replace(/\s+/g, " ").trim().slice(0, 60); if (!name) return bad("Give the bill a name.");
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.due || ""))) return bad("Pick a real due date.");
+          const amount = b.amount === null || b.amount === "" || b.amount === undefined ? null : Number(b.amount); if (amount !== null && !(amount >= 0)) return bad("The amount should be a number, or left empty.");
+          const repeat = b.repeat === "monthly" ? "monthly" : "none";
+          if (op === "add") BILLS.push({ id: "bill" + (++billSeq), name, amount, due: b.due, repeat, paid: false, paidAt: null, lastPaid: null });
+          else { const x = find(b.id); if (!x) return json({ error: "That bill is gone." }, 404); Object.assign(x, { name, amount, due: b.due, repeat }); }
+        } else if (op === "paid") {
+          const x = find(b.id); if (!x) return json({ error: "That bill is gone." }, 404);
+          if (x.repeat === "monthly") { x.lastPaid = { due: x.due, at: todayKey() }; const [y, m, d] = x.due.split("-").map(Number); x.due = dayKeyOf(Date.UTC(y, m, d)); }
+          else { x.paid = true; x.paidAt = todayKey(); }
+        } else if (op === "unpaid") {
+          const x = find(b.id); if (!x) return json({ error: "That bill is gone." }, 404);
+          if (x.lastPaid) { x.due = x.lastPaid.due; x.lastPaid = null; } else { x.paid = false; x.paidAt = null; }
+        } else if (op === "delete") { const i = BILLS.findIndex((x) => x.id === b.id); if (i >= 0) { lastDeleted = BILLS.splice(i, 1)[0]; } }
+        else if (op === "restore") { if (lastDeleted && lastDeleted.id === b.id) { BILLS.push(lastDeleted); lastDeleted = null; } }
+        else return json({ error: "unknown bills action" }, 404);
+        return json({ ok: true, ...billsView() });
+      }
+      return json(billsView());
+    }
+    if (url.startsWith("/api/topics/seen")) { let b = {}; try { b = JSON.parse(init?.body || "{}"); } catch {} const t = TOPICS.find((x) => x.id === b.id); if (t) t.unread = false; return json({ ok: true }); }
+    if (url.startsWith("/api/topics")) return json({ topics: TOPICS.map((t) => ({ ...t })) });
+    if (url.startsWith("/api/decisions/pending")) return json(pendingView());
+    if (url.startsWith("/api/decisions/answer") && method === "POST") {
+      let b = {}; try { b = JSON.parse(init?.body || "{}"); } catch {}
+      const ids = b.all ? (b.ids || []) : [b.id], until = Date.now() + 10_000, out = [];
+      for (const id of ids) { const d = PENDING.find((x) => x.id === id && x.status === "open"); if (!d) continue; d.status = "answered"; d.answer = b.choice; d.prevLater = d.laterUntil; if (b.choice === "later") d.laterUntil = Date.now() + 3 * hr; out.push({ id, undoUntil: until }); }
+      return json({ ok: true, decisions: out });
+    }
+    if (url.startsWith("/api/decisions/undo") && method === "POST") { let b = {}; try { b = JSON.parse(init?.body || "{}"); } catch {} for (const id of b.ids || []) { const d = PENDING.find((x) => x.id === id); if (d) { d.status = "open"; d.answer = null; d.laterUntil = 0; } } return json({ ok: true }); }
+    if (url.startsWith("/api/decisions/resend")) return json({ ok: true });
     if ((init?.method || "GET") === "POST") {
       let b = {}; try { b = JSON.parse(init.body); } catch {}
       if (url === "/api/respond") {
@@ -150,7 +219,6 @@
     }
     if (url.startsWith("/api/state")) return json(state);
     // ---- R21 screens: invented sample data only. Writes (POST/DELETE) only touch memory or answer "ok". ----
-    const method = (init?.method || "GET").toUpperCase();
     const qp = (k) => new URL(url, location.href).searchParams.get(k);
     if (url.startsWith("/api/auth/me")) return json({ ok: true, user: "demo", name: "Demo" });
     if (url.startsWith("/api/providers")) {

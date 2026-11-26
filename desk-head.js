@@ -8,7 +8,8 @@ export const SEND_HINT = "One message to the head thread. Free, no AI.";
 export function headCard(status, sentAt, now = Date.now(), timedOut = false) {
   const s = status || { state: "waiting" };
   const head = (s.title && String(s.title)) || "the head";
-  if (s.state === "replied" && s.reply && s.reply.text) {
+  // a reply that exists wins over a stale "waiting"/"working" state (the poll may have saved the text before the state caught up)
+  if (s.reply && s.reply.text && (s.state === "replied" || s.state === "waiting" || s.state === "working" || s.state === "queued" || !s.state)) {
     const lines = String(s.reply.text).split(/\n+/).map((x) => x.trim()).filter(Boolean).slice(0, 12);
     return { tone: "replied", title: "Head replied", lines, tags: ["from " + head], done: true };
   }

@@ -1,3 +1,4 @@
+import { moreControl } from "./keepfocus.js";
 // The shared "full page on desktop" pattern (You, 21 Nov: on >= 900 px no feature screen opens as a small centred box over a blurred page).
 // Watches for the feature screens' wrappers (.np-wrap with one of these labels), tags them `fp` (fullpage.css does the layout) and adds a "‹ Back" button
 // that presses the screen's own close button, so each screen's own close + focus-return code runs. Short confirms/questions (Stop for today, New thread, Menu,
@@ -31,7 +32,7 @@ export function watchFullpages() {
     if (n.nodeType !== 1 || !n.classList?.contains("fp")) return;
     const t0 = Date.now(), tryFocus = () => {
       const a = document.activeElement;
-      if ((!a || a === document.body) && !document.querySelector(".np-wrap")) { try { (document.querySelector('[data-act="more"]') || document.querySelector('[data-tab="more"]'))?.focus({ preventScroll: true }); } catch { /* gone */ } }
+      if ((!a || a === document.body) && !document.querySelector(".np-wrap")) { try { moreControl()?.focus({ preventScroll: true }); } catch { /* gone */ } }
       if (Date.now() - t0 < 1500) setTimeout(tryFocus, 150);
     };
     setTimeout(tryFocus, 260);
